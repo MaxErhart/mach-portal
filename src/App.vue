@@ -13,7 +13,7 @@
       </div>
       <div class="main-nav-login" v-if="signedIn" @click="logout()" :style="{'width': windowWidth>750 ? '75%': '64px'}">
         <img src="@/assets/signOut.svg" alt="Sign Out">
-        <span class="button-span" v-if="windowWidth>750">Sign Out</span>
+        <span class="button-span" v-if="windowWidth>750">Log Out</span>
       </div>
     </div>
     <div id="main-body">
