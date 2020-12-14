@@ -85,15 +85,14 @@ export default {
     login(username, password){
 			axios({
 				method: 'post',
-				url: 'http://localhost/mach-portal/login.php',
+				url: 'https://www-3.mach.kit.edu/mach-portal/login.php',
 				data: {username: username, password: password},
 			}).then((response)=>{
 				console.log(response.data)
-			})      
+			})  
     },
     onResize(){
       this.windowWidth = window.innerWidth;
-      // console.log(window.innerWidth)
     },
     changePage(route) {
       this.$store.commit('setCurrentRoute', route);
