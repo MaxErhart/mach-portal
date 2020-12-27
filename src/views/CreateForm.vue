@@ -1,15 +1,19 @@
 <template>
   <div class="create-table">
     <h1>Create Table</h1>
-    <div class="create-table-body"></div>
+    <div class="create-table-body">
+      <FormCreator/>
+    </div>
   </div>
 </template>
 
 <script>
-
+import FormCreator from '@/components/FormCreator.vue'
 export default {
-  name: 'CreateTable',
-
+  name: 'CreateForm',
+  components: {
+    FormCreator
+  }
 }
 </script>
 

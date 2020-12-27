@@ -1,7 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Dashboard from '../views/Dashboard.vue'
-import CreateTable from '../views/CreateTable.vue'
+import CreateForm from '../views/CreateForm.vue'
 
 const routes = [
   {
@@ -23,9 +23,9 @@ const routes = [
     component: Dashboard
   },
   {
-    path: '/createtable',
-    name: 'CreateTable',
-    component: CreateTable
+    path: '/createform',
+    name: 'CreateForm',
+    component: CreateForm
   }  
 ]
 

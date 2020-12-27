@@ -58,6 +58,22 @@ export default {
       password: '',
     }
   },
+  beforeCreate() {
+    axios({
+      method: 'post',
+      url: 'https://www-3.mach.kit.edu/api/index.php',
+    }).then((response)=>{
+      console.log(response.data)
+      if(response.data){
+        if(response.data.isLoggedIn) {
+          this.$store.commit('login');
+          console.log(response.data)
+        }
+      }
+
+
+    })     
+  },
   mounted() {
     window.addEventListener('resize', this.onResize);
   },
@@ -85,10 +101,15 @@ export default {
     login(username, password){
 			axios({
 				method: 'post',
-				url: 'https://www-3.mach.kit.edu/mach-portal/login.php',
+				url: 'https://www-3.mach.kit.edu/api/login.php',
 				data: {username: username, password: password},
 			}).then((response)=>{
-				console.log(response.data)
+        console.log(response.data)
+        if(response.data[0].success) {
+          this.$store.commit('login');
+          console.log(response.data)
+        }
+
 			})  
     },
     onResize(){
@@ -117,6 +138,7 @@ export default {
 
 body {
   margin: 0;
+  overflow-x: hidden;
 }
 
 *, :after, :before {
