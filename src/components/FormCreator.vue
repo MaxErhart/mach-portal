@@ -6,7 +6,7 @@
       </div>
       <div id="create-form-content" ref="createFormContent">
         <div class="form-item-wrapper" v-for="(el,index) in selections" :key="el">
-          <div  @mousedown.self="startDrag($event, index)" :ref="el.id" :id="el.id" class="form-item"  v-html="el.element"></div>
+          <div  @mousedown.self.prevent="startDrag($event, index)" :ref="el.id" :id="el.id" class="form-item"  v-html="el.element"></div>
         </div>
       </div>
     </div>
@@ -33,24 +33,38 @@ export default {
     document.addEventListener("mouseup", ($event) => this.dragEnd($event));
   },
   methods: {
-    addSelection(item){
+    async addSelection(item){
       if(item == 'header'){
         var elTextContent = 'Header'
         var id = `${Math.floor(Math.random()*100000000)}`
         var el = `<h1>${elTextContent}</h1>`
-        this.selections.push({element: el, id: id})
+        var selection = {element: el, id: id, top: 0, bottom: 0};
+        // if(this.selections.length>0){
+        //   this.selections[this.selections.length - 1].bottom = this.$refs.[this.selections[this.selections.length - 1].id].getBoundingClientRect().bottom;
+        //   selection.top = this.selections[this.selections.length - 1].bottom;
+        // }
+        this.selections.push(selection)
+        // console.log(this.$refs)
+        await this.$nextTick()
+        // console.log(this.$refs)
+        var top = this.$refs[id].getBoundingClientRect().top;
+        var bottom = this.$refs[id].getBoundingClientRect().bottom;
+        this.selections[this.selections.length - 1].top = top;
+        this.selections[this.selections.length - 1].bottom = bottom;
+        console.log(this.selections)
       }
     },
     startDrag(event, index){
-      console.log(this.$refs)
-      console.log(event.target.id, index, this.$refs[this.selections[index].id].getBoundingClientRect())
+      // console.log(this.$refs)
+      // console.log(event.target.id, index, this.$refs[this.selections[index].id].getBoundingClientRect())
       this.top = this.$refs.createFormContent.getBoundingClientRect().top;
       this.left = this.$refs.createFormContent.getBoundingClientRect().left;
       this.dragingTarget = event.target
+      console.log(index)
       if(index>0){
         this.height = this.$refs[this.selections[index-1].id].getBoundingClientRect().bottom;
       } else {
-        this.height = 0;
+        this.height = this.top;
       }
       
     },
