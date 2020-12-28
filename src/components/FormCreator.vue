@@ -21,6 +21,7 @@ export default {
     return {
       // options: {'header': },
       selections: [],
+      itemHeights: [],
       items: {},
       dragingTarget: null,
       top: null,
@@ -39,28 +40,19 @@ export default {
         var id = `${Math.floor(Math.random()*100000000)}`
         var el = `<h1>${elTextContent}</h1>`
         var selection = {element: el, id: id, top: 0, bottom: 0};
-        // if(this.selections.length>0){
-        //   this.selections[this.selections.length - 1].bottom = this.$refs.[this.selections[this.selections.length - 1].id].getBoundingClientRect().bottom;
-        //   selection.top = this.selections[this.selections.length - 1].bottom;
-        // }
         this.selections.push(selection)
-        // console.log(this.$refs)
         await this.$nextTick()
-        // console.log(this.$refs)
         var top = this.$refs[id].getBoundingClientRect().top;
         var bottom = this.$refs[id].getBoundingClientRect().bottom;
         this.selections[this.selections.length - 1].top = top;
         this.selections[this.selections.length - 1].bottom = bottom;
-        console.log(this.selections)
       }
     },
     startDrag(event, index){
-      // console.log(this.$refs)
-      // console.log(event.target.id, index, this.$refs[this.selections[index].id].getBoundingClientRect())
       this.top = this.$refs.createFormContent.getBoundingClientRect().top;
       this.left = this.$refs.createFormContent.getBoundingClientRect().left;
-      this.dragingTarget = event.target
-      console.log(index)
+      this.dragingTarget = {el: event.target, index: index};
+      event.target.parentElement.style.zIndex = 100;
       if(index>0){
         this.height = this.$refs[this.selections[index-1].id].getBoundingClientRect().bottom;
       } else {
@@ -70,13 +62,43 @@ export default {
     },
     draging(event){
       if(this.dragingTarget){
-        this.dragingTarget.style.left = `${event.pageX - this.left}px`;
-        this.dragingTarget.style.top = `${event.pageY - this.height}px`;
+        this.dragingTarget.el.style.zindex = 10;
+        var item = this.selections[this.dragingTarget.index];
+        if(this.dragingTarget.index > 0 && this.dragingTarget.index < this.selections.length-1) {
+          // this.dragingTarget.el.style.left = `${event.pageX - this.left}px`;
+          this.dragingTarget.el.style.top = `${event.pageY - this.selections[this.dragingTarget.index-1].bottom}px`;
+          if(event.pageY < this.selections[this.dragingTarget.index-1].top + (this.selections[this.dragingTarget.index-1].bottom - this.selections[this.dragingTarget.index-1].top)/2) {
+            this.selections.splice(this.dragingTarget.index, 1);
+            this.selections.splice(this.dragingTarget.index-1,0,item);
+            this.dragingTarget.index -= 1;
+          } else if(event.pageY > this.selections[this.dragingTarget.index+1].top + (this.selections[this.dragingTarget.index+1].bottom - this.selections[this.dragingTarget.index+1].top)/2) {
+            this.selections.splice(this.dragingTarget.index, 1);
+            this.selections.splice(this.dragingTarget.index+1,0,item);
+            this.dragingTarget.index += 1;
+          }      
+        } else if(this.dragingTarget.index >= this.selections.length-1) { 
+          this.dragingTarget.el.style.top = `${event.pageY - this.selections[this.dragingTarget.index-1].bottom}px`;
+          if(event.pageY < this.selections[this.dragingTarget.index-1].top + (this.selections[this.dragingTarget.index-1].bottom - this.selections[this.dragingTarget.index-1].top)/2) {
+            this.selections.splice(this.dragingTarget.index, 1);
+            this.selections.splice(this.dragingTarget.index-1,0,item);
+            this.dragingTarget.index -= 1;
+          }
+        } else {
+          // this.dragingTarget.el.style.left = `${event.pageX - this.left}px`;
+          this.dragingTarget.el.style.top = `${event.pageY - this.top}px`;
+          if(event.pageY > this.selections[this.dragingTarget.index+1].top + (this.selections[this.dragingTarget.index+1].bottom - this.selections[this.dragingTarget.index+1].top)/2) {
+            this.selections.splice(this.dragingTarget.index, 1);
+            this.selections.splice(this.dragingTarget.index+1,0,item);
+            this.dragingTarget.index += 1;
+          }
+        }
       }
     },
     dragEnd(){
-      // add snap back
       if(this.dragingTarget){
+        this.dragingTarget.el.parentElement.style.zIndex = 1;
+        console.log(this.dragingTarget.el.parentElement.getBoundingClientRect().top - this.top)
+        this.dragingTarget.el.style.top = 0;
         this.dragingTarget = null;
       }
     }
@@ -123,5 +145,6 @@ export default {
   }
   .form-item-wrapper{
     border: 1px solid gray;
+    position: relative;
   }
 </style>
