@@ -21,8 +21,6 @@ export default {
     return {
       // options: {'header': },
       selections: [],
-      itemHeights: [],
-      items: {},
       dragingTarget: null,
       top: null,
       left: null,
@@ -38,7 +36,7 @@ export default {
       if(item == 'header'){
         var elTextContent = 'Header'
         var id = `${Math.floor(Math.random()*100000000)}`
-        var el = `<h1>${elTextContent}</h1>`
+        var el = `<h1 class="item-content">${elTextContent}</h1>`
         var selection = {element: el, id: id, top: 0, bottom: 0};
         this.selections.push(selection)
         await this.$nextTick()
@@ -53,6 +51,7 @@ export default {
       this.left = this.$refs.createFormContent.getBoundingClientRect().left;
       this.dragingTarget = {el: event.target, index: index};
       event.target.parentElement.style.zIndex = 100;
+      event.target.style.boxShadow = "inset 0 1px 1px rgba(0,0,0,0.1), 0 0 8px rgba(102,175,233,0.6)";
       if(index>0){
         this.height = this.$refs[this.selections[index-1].id].getBoundingClientRect().bottom;
       } else {
@@ -60,54 +59,70 @@ export default {
       }
       
     },
-    draging(event){
+    async draging(event){
       if(this.dragingTarget){
-        this.dragingTarget.el.style.zindex = 10;
         var item = this.selections[this.dragingTarget.index];
-        if(this.dragingTarget.index > 0 && this.dragingTarget.index < this.selections.length-1) {
-          // this.dragingTarget.el.style.left = `${event.pageX - this.left}px`;
-          this.dragingTarget.el.style.top = `${event.pageY - this.selections[this.dragingTarget.index-1].bottom}px`;
-          if(event.pageY < this.selections[this.dragingTarget.index-1].top + (this.selections[this.dragingTarget.index-1].bottom - this.selections[this.dragingTarget.index-1].top)/2) {
-            this.selections.splice(this.dragingTarget.index, 1);
-            this.selections.splice(this.dragingTarget.index-1,0,item);
-            this.dragingTarget.index -= 1;
-          } else if(event.pageY > this.selections[this.dragingTarget.index+1].top + (this.selections[this.dragingTarget.index+1].bottom - this.selections[this.dragingTarget.index+1].top)/2) {
-            this.selections.splice(this.dragingTarget.index, 1);
-            this.selections.splice(this.dragingTarget.index+1,0,item);
-            this.dragingTarget.index += 1;
-          }      
-        } else if(this.dragingTarget.index >= this.selections.length-1) { 
-          this.dragingTarget.el.style.top = `${event.pageY - this.selections[this.dragingTarget.index-1].bottom}px`;
-          if(event.pageY < this.selections[this.dragingTarget.index-1].top + (this.selections[this.dragingTarget.index-1].bottom - this.selections[this.dragingTarget.index-1].top)/2) {
-            this.selections.splice(this.dragingTarget.index, 1);
-            this.selections.splice(this.dragingTarget.index-1,0,item);
-            this.dragingTarget.index -= 1;
+        if(this.dragingTarget.index == 0) {
+          this.dragingTarget.el.style.top = `${event.pageY - this.top - 4}px`;
+          if(this.selections.length > 1) {
+            if(event.pageY > this.selections[this.dragingTarget.index+1].top) {
+              this.selections.splice(this.dragingTarget.index, 1);
+              this.selections.splice(this.dragingTarget.index+1,0,item);
+              this.dragingTarget.index += 1;
+              await this.$nextTick()
+              this.updateYPosList(this.selections[this.dragingTarget.index-1])
+            }            
           }
+        } else if(this.dragingTarget.index == this.selections.length - 1) {
+          this.dragingTarget.el.style.top = `${event.pageY - this.selections[this.dragingTarget.index-1].bottom-4}px`;
+            if(event.pageY < this.selections[this.dragingTarget.index-1].bottom) {
+              this.selections.splice(this.dragingTarget.index, 1);
+              this.selections.splice(this.dragingTarget.index-1,0,item);
+              this.dragingTarget.index -= 1;
+              await this.$nextTick()
+              this.updateYPosList(this.selections[this.dragingTarget.index+1])              
+            }
         } else {
-          // this.dragingTarget.el.style.left = `${event.pageX - this.left}px`;
-          this.dragingTarget.el.style.top = `${event.pageY - this.top}px`;
-          if(event.pageY > this.selections[this.dragingTarget.index+1].top + (this.selections[this.dragingTarget.index+1].bottom - this.selections[this.dragingTarget.index+1].top)/2) {
-            this.selections.splice(this.dragingTarget.index, 1);
-            this.selections.splice(this.dragingTarget.index+1,0,item);
-            this.dragingTarget.index += 1;
-          }
+          this.dragingTarget.el.style.top = `${event.pageY - this.selections[this.dragingTarget.index-1].bottom-4}px`;
+            if(event.pageY < this.selections[this.dragingTarget.index-1].bottom) {
+              this.selections.splice(this.dragingTarget.index, 1);
+              this.selections.splice(this.dragingTarget.index-1,0,item);
+              this.dragingTarget.index -= 1;
+              await this.$nextTick()
+              this.updateYPosList(this.selections[this.dragingTarget.index+1])                
+            } else if(event.pageY > this.selections[this.dragingTarget.index+1].top) {
+              this.selections.splice(this.dragingTarget.index, 1);
+              this.selections.splice(this.dragingTarget.index+1,0,item);
+              this.dragingTarget.index += 1;
+              await this.$nextTick()
+              this.updateYPosList(this.selections[this.dragingTarget.index-1])                
+            }     
         }
       }
     },
     dragEnd(){
       if(this.dragingTarget){
         this.dragingTarget.el.parentElement.style.zIndex = 1;
-        console.log(this.dragingTarget.el.parentElement.getBoundingClientRect().top - this.top)
+        this.dragingTarget.el.style.boxShadow = "none";
         this.dragingTarget.el.style.top = 0;
+        for(var i=0; i<this.selections.length; i++) {
+          this.updateYPosList(this.selections[i])
+        }
         this.dragingTarget = null;
+
       }
+    },
+    updateYPosList(selection){
+      var rect = this.$refs[selection.id].getBoundingClientRect()
+      selection.top = rect.top
+      selection.bottom = rect.bottom
     }
   }
 
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss" >
   .create-form {
     text-align: center;
     display: flex;
@@ -138,13 +153,25 @@ export default {
   }
   .form-item {
     background-color: rgb(243, 243, 243);
-    border: 1px solid purple;
-    // height: 100px;
+    cursor: move;
     position: relative;
     width: 100%;
+    padding: 0px 0;
+    margin: 0px 0;
+
+    > * {
+      padding: 2px;
+      margin: 0;
+      pointer-events: none;
+    }
+
   }
+
   .form-item-wrapper{
-    border: 1px solid gray;
     position: relative;
+    margin: 4px 4px;
+    &:hover {
+      box-shadow: inset 0 1px 1px rgba(0,0,0,0.1), 0 0 8px rgba(102,175,233,0.6);
+    }    
   }
 </style>
