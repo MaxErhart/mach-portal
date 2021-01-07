@@ -6,7 +6,24 @@
       </div>
       <div id="create-form-content" ref="createFormContent">
         <div class="form-item-wrapper" v-for="(el,index) in selections" :key="el">
-          <div  @mousedown.self.prevent="startDrag($event, index)" :ref="el.id" :id="el.id" class="form-item"  v-html="el.element"></div>
+          <div  @mousedown.self.prevent="startDrag($event, index)" :ref="el.id" :id="el.id" class="form-item">
+            <div v-html="generateElHtml(el.element)" class="item-type"></div>
+            <div class="form-item-buttons">
+              <div class="form-item-option delete-form-item"></div>
+              <div class="form-item-option edit-form-item" @click="el.editing ? el.editing = false : el.editing=true"></div>
+            </div>
+          </div>
+          <div class="edit-element-container" v-if="el.editing">
+            <input type="text" v-model="el.element.content">
+            <select v-model="el.element.tag">
+              <option value="h1">h1</option>
+              <option value="h2">h2</option>
+              <option value="h3">h3</option>
+              <option value="h4">h4</option>
+              <option value="h5">h5</option>
+              <option value="h6">h6</option>
+            </select>
+          </div>          
         </div>
       </div>
     </div>
@@ -19,7 +36,6 @@ export default {
   name: 'FormCreator',
   data() {
     return {
-      // options: {'header': },
       selections: [],
       dragingTarget: null,
       top: null,
@@ -36,8 +52,8 @@ export default {
       if(item == 'header'){
         var elTextContent = 'Header'
         var id = `${Math.floor(Math.random()*100000000)}`
-        var el = `<h1 class="item-content">${elTextContent}</h1>`
-        var selection = {element: el, id: id, top: 0, bottom: 0};
+        var element = {type: "header", tag:"h1", content: elTextContent};
+        var selection = {element: element, id: id, top: 0, bottom: 0, editing: false};
         this.selections.push(selection)
         await this.$nextTick()
         var top = this.$refs[id].getBoundingClientRect().top;
@@ -46,11 +62,17 @@ export default {
         this.selections[this.selections.length - 1].bottom = bottom;
       }
     },
+    generateElHtml(element) {
+      if(element.type == 'header') {
+        return `<${element.tag} class="item-content">${element.content}</${element.tag}>`;
+      }
+    },
     startDrag(event, index){
       this.top = this.$refs.createFormContent.getBoundingClientRect().top;
       this.left = this.$refs.createFormContent.getBoundingClientRect().left;
       this.dragingTarget = {el: event.target, index: index};
       event.target.parentElement.style.zIndex = 100;
+      event.target.style.zIndex = 100;
       event.target.style.boxShadow = "inset 0 1px 1px rgba(0,0,0,0.1), 0 0 8px rgba(102,175,233,0.6)";
       if(index>0){
         this.height = this.$refs[this.selections[index-1].id].getBoundingClientRect().bottom;
@@ -103,6 +125,7 @@ export default {
     dragEnd(){
       if(this.dragingTarget){
         this.dragingTarget.el.parentElement.style.zIndex = 1;
+        this.dragingTarget.el.style.zIndex = 1;
         this.dragingTarget.el.style.boxShadow = "none";
         this.dragingTarget.el.style.top = 0;
         for(var i=0; i<this.selections.length; i++) {
@@ -116,13 +139,16 @@ export default {
       var rect = this.$refs[selection.id].getBoundingClientRect()
       selection.top = rect.top
       selection.bottom = rect.bottom
-    }
+    },
   }
 
 }
 </script>
 
 <style lang="scss" >
+  input {
+    user-select: auto !important;
+  }
   .create-form {
     text-align: center;
     display: flex;
@@ -159,19 +185,56 @@ export default {
     padding: 0px 0;
     margin: 0px 0;
 
-    > * {
+    >.item-type {
       padding: 2px;
       margin: 0;
       pointer-events: none;
     }
 
+    &:hover {
+      >.form-item-buttons {
+        visibility: visible;
+      }
+    }
   }
 
+  .form-item-buttons {
+    position: absolute;
+    top:0;
+    right:0;
+    display: flex;
+    flex-direction: row;
+    margin: 3px 0;
+    visibility: hidden;
+    
+  }
+  
+  .form-item-option {
+    width: 20px;
+    height: 20px;
+    border: 1px solid blue;
+    cursor: pointer;
+    margin: 0 3px;
+  }
+
+  .item-type {
+    > * {
+      margin:0;
+      pointer-events: none;
+      user-select: none;
+    }
+  }
   .form-item-wrapper{
     position: relative;
     margin: 4px 4px;
     &:hover {
       box-shadow: inset 0 1px 1px rgba(0,0,0,0.1), 0 0 8px rgba(102,175,233,0.6);
     }    
+  }
+  .edit-element-container{
+    position: relative;
+    top: 0;
+    height: 200px;
+    width: 100%;
   }
 </style>
