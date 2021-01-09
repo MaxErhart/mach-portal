@@ -185,6 +185,7 @@ export default {
     background-color: rgb(243, 243, 243);
     cursor: move;
     position: relative;
+    height: 100%;
     width: 100%;
   }
   .component {

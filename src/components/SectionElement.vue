@@ -56,6 +56,7 @@ export default {
     text-align: start;
     white-space: pre-line;
     word-break: break-all;
+    // pointer-events: none;
   }
   .section-element {
     position: relative;
