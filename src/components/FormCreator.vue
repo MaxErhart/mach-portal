@@ -2,27 +2,17 @@
   <div class="create-form">
     <div class="create-form-body">
       <div class="create-form-selection">
-        <div class="form-item-selection" v-on:click="addSelection('header')"></div>
+        <div class="form-item-selection" v-on:click="addSelection('header')">Header</div>
+        <div class="form-item-selection" v-on:click="addSelection('section')">Section</div>
       </div>
       <div id="create-form-content" ref="createFormContent">
         <div class="form-item-wrapper" v-for="(el,index) in selections" :key="el">
-          <div  @mousedown.self.prevent="startDrag($event, index)" :ref="el.id" :id="el.id" class="form-item">
-            <div v-html="generateElHtml(el.element)" class="item-type"></div>
-            <div class="form-item-buttons">
-              <div class="form-item-option delete-form-item"></div>
-              <div class="form-item-option edit-form-item" @click="el.editing ? el.editing = false : el.editing=true"></div>
-            </div>
+          <div @mousedown.self.prevent="startDrag($event, index)" :ref="el.id" :id="el.id" class="form-item">
+            <component class="component" :is="el.component" v-bind="el.props"></component>
           </div>
-          <div class="edit-element-container" v-if="el.editing">
-            <input type="text" v-model="el.element.content">
-            <select v-model="el.element.tag">
-              <option value="h1">h1</option>
-              <option value="h2">h2</option>
-              <option value="h3">h3</option>
-              <option value="h4">h4</option>
-              <option value="h5">h5</option>
-              <option value="h6">h6</option>
-            </select>
+          <div class="form-item-buttons">
+            <div class="form-item-option edit-form-item" @click="el.props.editable ? el.props.editable = false : el.props.editable=true"></div>
+            <div class="form-item-option delete-form-item" @click="deleteItem(el)"></div>
           </div>          
         </div>
       </div>
@@ -32,8 +22,14 @@
 </template>
 
 <script>
+import HeaderElement from './HeaderElement.vue'
+import SectionElement from './SectionElement.vue'
 export default {
   name: 'FormCreator',
+  components: {
+    HeaderElement,
+    SectionElement
+  },
   data() {
     return {
       selections: [],
@@ -49,18 +45,23 @@ export default {
   },
   methods: {
     async addSelection(item){
+      var id = `${Math.floor(Math.random()*100000000)}`
+      var selection = {component: "none", props: {editable: false}, id: id, top: 0, bottom: 0};
       if(item == 'header'){
-        var elTextContent = 'Header'
-        var id = `${Math.floor(Math.random()*100000000)}`
-        var element = {type: "header", tag:"h1", content: elTextContent};
-        var selection = {element: element, id: id, top: 0, bottom: 0, editing: false};
-        this.selections.push(selection)
-        await this.$nextTick()
-        var top = this.$refs[id].getBoundingClientRect().top;
-        var bottom = this.$refs[id].getBoundingClientRect().bottom;
-        this.selections[this.selections.length - 1].top = top;
-        this.selections[this.selections.length - 1].bottom = bottom;
+        selection = {component: "HeaderElement", props: {editable: false}, id: id, top: 0, bottom: 0};
+      } else if(item == 'section') {
+        selection = {component: "SectionElement", props: {editable: false}, id: id, top: 0, bottom: 0};
       }
+      this.selections.push(selection)
+      await this.$nextTick()
+      var top = this.$refs[id].getBoundingClientRect().top;
+      var bottom = this.$refs[id].getBoundingClientRect().bottom;
+      this.selections[this.selections.length - 1].top = top;
+      this.selections[this.selections.length - 1].bottom = bottom;     
+    },
+    deleteItem(element) {
+      const index = this.selections.indexOf(element)
+      this.selections.splice(index, 1)
     },
     generateElHtml(element) {
       if(element.type == 'header') {
@@ -146,9 +147,6 @@ export default {
 </script>
 
 <style lang="scss" >
-  input {
-    user-select: auto !important;
-  }
   .create-form {
     text-align: center;
     display: flex;
@@ -168,6 +166,7 @@ export default {
   #create-form-content{
     position: relative;
     height: 100%;
+    // max-width: 45vw;
     border: 1px solid red;
     display: flex;
     flex-direction: column;
@@ -182,41 +181,32 @@ export default {
     cursor: move;
     position: relative;
     width: 100%;
-    padding: 0px 0;
-    margin: 0px 0;
-
-    >.item-type {
-      padding: 2px;
-      margin: 0;
-      pointer-events: none;
-    }
-
-    &:hover {
-      >.form-item-buttons {
-        visibility: visible;
-      }
-    }
   }
-
+  .component {
+    pointer-events: none;
+  }
   .form-item-buttons {
     position: absolute;
+    z-index: 2;
     top:0;
     right:0;
     display: flex;
     flex-direction: row;
-    margin: 3px 0;
+    margin: 0px 0;
     visibility: hidden;
-    
   }
   
   .form-item-option {
     width: 20px;
     height: 20px;
-    border: 1px solid blue;
+    border: 1px solid gray;
     cursor: pointer;
-    margin: 0 3px;
+    background-color: white;
   }
-
+  .edit-form-item {
+    border-radius: 0 0 0 5px;
+    border-right: none;
+  }
   .item-type {
     > * {
       margin:0;
@@ -229,12 +219,15 @@ export default {
     margin: 4px 4px;
     &:hover {
       box-shadow: inset 0 1px 1px rgba(0,0,0,0.1), 0 0 8px rgba(102,175,233,0.6);
-    }    
+      >.form-item-buttons {
+        visibility: visible;
+      }    
+    }      
   }
   .edit-element-container{
+    margin: 5px;
+    padding: 5px;
     position: relative;
     top: 0;
-    height: 200px;
-    width: 100%;
   }
 </style>
