@@ -52,6 +52,7 @@ export default {
   .item-content {
     width: 100%;
     display: block;
+    min-height: 1em;
     text-align: start;
     white-space: pre-line;
     word-break: break-all;

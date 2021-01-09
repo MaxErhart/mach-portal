@@ -4,6 +4,7 @@
       <div class="create-form-selection">
         <div class="form-item-selection" v-on:click="addSelection('header')">Header</div>
         <div class="form-item-selection" v-on:click="addSelection('section')">Section</div>
+        <div class="form-item-selection" v-on:click="addSelection('input')">Input</div>
       </div>
       <div id="create-form-content" ref="createFormContent">
         <div class="form-item-wrapper" v-for="(el,index) in selections" :key="el">
@@ -24,11 +25,13 @@
 <script>
 import HeaderElement from './HeaderElement.vue'
 import SectionElement from './SectionElement.vue'
+import InputElement from './InputElement.vue'
 export default {
   name: 'FormCreator',
   components: {
     HeaderElement,
-    SectionElement
+    SectionElement,
+    InputElement
   },
   data() {
     return {
@@ -51,6 +54,8 @@ export default {
         selection = {component: "HeaderElement", props: {editable: false}, id: id, top: 0, bottom: 0};
       } else if(item == 'section') {
         selection = {component: "SectionElement", props: {editable: false}, id: id, top: 0, bottom: 0};
+      } else if(item == 'input') {
+        selection = {component: "InputElement", props: {editable: false}, id: id, top: 0, bottom: 0};
       }
       this.selections.push(selection)
       await this.$nextTick()
