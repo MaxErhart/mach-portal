@@ -2,6 +2,9 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Dashboard from '../views/Dashboard.vue'
 import CreateForm from '../views/CreateForm.vue'
+import DisplayForm from '../views/DisplayForm.vue'
+import AllForms from '../views/AllForms.vue'
+import Submission from '../views/Submission.vue'
 
 const routes = [
   {
@@ -26,7 +29,20 @@ const routes = [
     path: '/createform',
     name: 'CreateForm',
     component: CreateForm
-  }  
+  },
+  {
+    path: '/form',
+    name: 'AllForms',
+    component: AllForms
+  },
+  {
+    path: '/submissions/:id',
+    component: Submission
+  },   
+  {
+    path: '/form/:id',
+    component: DisplayForm
+  }
 ]
 
 const router = createRouter({

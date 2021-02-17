@@ -9,7 +9,10 @@
 export default {
   name: 'Home',
   components: {
-  }
+  },
+  mounted() {
+    this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[0])
+  },  
 }
 </script>
 

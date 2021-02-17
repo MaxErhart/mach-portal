@@ -1,10 +1,9 @@
 <template>
   <div class="dashboard">
     <h1>Dashboard</h1>
-    <div class="dashboard-content">
-      <!-- <DashboardCard @click="redirect('CreateTable')" icon="createTable.svg" text="Create Table"/> -->
-      <DashboardCard com="HelloWorld" icon="createTable.svg" text="Create Table"/>
-      <DashboardCard icon="createTable.svg" text="Alter Table"/>
+    <div class="dashboard-content">  
+      <DashboardCard route="CreateForm" icon="createForm.svg" text="Create Form"/>
+      <DashboardCard route="AllForms" icon="list.svg" text="View Forms"/>
     </div>
   </div>
 </template>
@@ -25,9 +24,6 @@ export default {
     this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[1])
   },
   methods: {
-    redirect(route) {
-      this.$router.push({name: route})
-    },
 
   }
 }
@@ -39,6 +35,7 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
+    width: 100%;
   }
   .dashboard-content {
     position: relative;

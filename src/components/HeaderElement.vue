@@ -1,15 +1,19 @@
 <template>
   <div class="header-element" :style="!editable ? 'border: none': 'border: 1px solid black'">
-    <div class="item" v-html="generateHtml()"></div>
+    <div class="item">
+      <component :is="tag" class="item-content">
+        {{content}}
+      </component>      
+    </div>
   
     <div class="edit-element-window" v-if="editable">
       <section>
         <label for="content">Titel:</label>
-        <input name="content" type="text" v-model="content">
+        <input name="content" type="text" v-model="content" @change="updateElData()">
       </section>
       <section>
         <label for="tag">Size:</label>
-        <select name="tag" v-model="tag">
+        <select name="tag" v-model="tag" @change="updateElData()">
           <option value="h1">h1</option>
           <option value="h2">h2</option>
           <option value="h3">h3</option>
@@ -28,6 +32,7 @@ export default {
   name: 'HeaderElement',
   props: {
     editable: Boolean,
+    id: String,
   },
   data() {
     return {
@@ -36,9 +41,19 @@ export default {
       tag: "h1"
     }
   },
+  mounted() {
+    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, content: this.content}});
+  },
+  beforeUnmount() {
+    this.$store.commit('deleteSelection', {id: this.id});
+  },
   methods: {
     generateHtml() {
       return `<${this.tag} class="item-content">${this.content}</${this.tag}>`;
+    },
+    updateElData() {
+      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, content: this.content}});
+      console.log(this.$store.getters.getSelectionsData)
     }
   }
 

@@ -6,6 +6,7 @@ error_reporting(E_ALL);
 if(!isset($_SESSION['isLoggedIn'])) {
   echo json_encode(array("error" => "not logged in"));
 } else {
-  echo json_encode($_SESSION);
+  session_destroy();
+  echo json_encode(array("success" => true));
 }
 ?>

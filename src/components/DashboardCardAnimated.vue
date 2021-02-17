@@ -1,21 +1,32 @@
 <template>
-    <div class="dashboard-card" @click="redirect(route)">
-      <div class="dashboard-card-icon" v-if="!active">
+    <div class="dashboard-card" @click="openCard($event)" :class="{active: active}" ref="dashboardCard">
+      <div class="dashboard-card-icon" v-if="!active" ref="dashboardCardIcon">
         <img :src="require(`@/assets/${icon}`)">
       </div>
-      <div class="dashboard-card-text" v-if="!active">
+      <div class="dashboard-card-text" v-if="!active" ref="dashboardCardText">
         {{text}}
       </div>
+      <transition v-on:enter="enter">
+        <div class="dashboard-card-active-content" v-if="active">
+          <HelloWorld v-if="com=='HelloWorld'"/>
+          content wee
+        </div>
+      </transition>
     </div>
 </template>
 
 <script>
+import Velocity from 'velocity-animate'
+import HelloWorld from '../components/HelloWorld.vue'
 export default {
   name: 'DashboardCard',
+  components: {
+    HelloWorld,
+  },
   props: {
     icon: String,
     text: String,
-    route: String,
+    com: String,
   },
   data() {
     return {
@@ -23,13 +34,19 @@ export default {
     }
   },
   mounted() {
-
+    document.body.addEventListener('click', this.openCard)
   },
   methods: {
-    redirect(route) {
-      this.$router.push({
-        name: `${route}`
-      })
+    enter(el, done){
+      Velocity(el, { scale: [1, 0.5] }, { duration: 200, delay: 100, complete: done })
+    },
+    openCard(event){
+      event.stopPropagation()
+      if((event.target ==  this.$refs.dashboardCard || event.target.parentElement == this.$refs.dashboardCard || event.target.parentElement.parentElement == this.$refs.dashboardCard) && !this.active){
+        this.active = true;
+      } else if (!(event.target ==  this.$refs.dashboardCard || event.target.parentElement ==  this.$refs.dashboardCard) && this.active) {
+        this.active = false;
+      }
     }
   },
 }

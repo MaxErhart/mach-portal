@@ -1,28 +1,39 @@
 <template>
   <div class="create-form">
+    <div class="crate-form-metadata">
+      <section class="form-name">
+        <label for="form-name">Form Name:</label>
+        <input type="text" class="form-name-input" v-model="formName">
+      </section>
+    </div>
     <div class="create-form-body">
-      <div class="create-form-selection">
-        <div class="form-item-selection" v-on:click="addSelection('header')">Header</div>
-        <div class="form-item-selection" v-on:click="addSelection('section')">Section</div>
-        <div class="form-item-selection" v-on:click="addSelection('input')">Input</div>
-      </div>
       <div id="create-form-content" ref="createFormContent">
         <div class="form-item-wrapper" v-for="(el,index) in selections" :key="el">
           <div @mousedown.self.prevent="startDrag($event, index)" :ref="el.id" :id="el.id" class="form-item">
             <component class="component" :is="el.component" v-bind="el.props"></component>
           </div>
           <div class="form-item-buttons">
-            <div class="form-item-option edit-form-item" @click="el.props.editable ? el.props.editable = false : el.props.editable=true"></div>
-            <div class="form-item-option delete-form-item" @click="deleteItem(el)"></div>
+            <div class="form-item-option edit-form-item" @click="el.props.editable ? el.props.editable = false : el.props.editable=true">
+              <img :src="require(`@/assets/edit.svg`)">
+            </div>
+            <div class="form-item-option delete-form-item" @click="deleteItem(el)">
+              <img :src="require(`@/assets/delete.svg`)">
+            </div>
           </div>          
         </div>
       </div>
+      <div class="create-form-selection">
+        <div class="form-item-selection" v-on:click="addSelection('header')">Header</div>
+        <div class="form-item-selection" v-on:click="addSelection('section')">Section</div>
+        <div class="form-item-selection" v-on:click="addSelection('input')">Input</div>
+      </div>      
     </div>
-
+    <button class="kit-button" id="save-form-button" v-on:click="saveForm()">Safe Form</button>
   </div>
 </template>
 
 <script>
+import axios from "axios";
 import HeaderElement from './HeaderElement.vue'
 import SectionElement from './SectionElement.vue'
 import InputElement from './InputElement.vue'
@@ -40,6 +51,7 @@ export default {
       top: null,
       left: null,
       height: null,
+      formName: null,
     }
   },
   mounted(){
@@ -51,11 +63,11 @@ export default {
       var id = `${Math.floor(Math.random()*100000000)}`
       var selection = {component: "none", props: {editable: false}, id: id, top: 0, bottom: 0};
       if(item == 'header'){
-        selection = {component: "HeaderElement", props: {editable: false}, id: id, top: 0, bottom: 0};
+        selection = {component: "HeaderElement", props: {editable: false, id: id}, id: id, top: 0, bottom: 0};
       } else if(item == 'section') {
-        selection = {component: "SectionElement", props: {editable: false}, id: id, top: 0, bottom: 0};
+        selection = {component: "SectionElement", props: {editable: false, id: id}, id: id, top: 0, bottom: 0};
       } else if(item == 'input') {
-        selection = {component: "InputElement", props: {editable: false}, id: id, top: 0, bottom: 0};
+        selection = {component: "InputElement", props: {editable: false, id: id}, id: id, top: 0, bottom: 0};
       }
       this.selections.push(selection)
       await this.$nextTick()
@@ -137,8 +149,8 @@ export default {
         for(var i=0; i<this.selections.length; i++) {
           this.updateYPosList(this.selections[i])
         }
+        this.$store.commit('updateSelectionsOrder', this.selections);
         this.dragingTarget = null;
-
       }
     },
     updateYPosList(selection){
@@ -146,12 +158,39 @@ export default {
       selection.top = rect.top
       selection.bottom = rect.bottom
     },
+    saveForm() {
+      axios({
+				method: 'post',
+				url: 'https://www-3.mach.kit.edu/api/saveForm.php',
+				data: {formName: this.formName, elements: this.$store.getters.getSelectionsData},
+			}).then((response) => {
+        console.log(response.data)
+      })   
+    },
   }
 
 }
 </script>
 
-<style lang="scss" >
+<style scoped lang="scss" >
+  label {
+    display: block;
+    font-size: 16px;
+    width: 100%;
+    font-weight: 500;
+    margin: 5px 10px;
+    text-align: left;
+  }
+  input {
+    user-select: auto !important;
+    display: block;
+    height: 40px;
+    width: calc(100% - 20px);
+    font-size: 16px;
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin: 5px 10px;
+  }
   .create-form {
     text-align: center;
     display: flex;
@@ -160,29 +199,43 @@ export default {
   }
   .create-form-body {
     height: 100%;
-    border: 1px solid black;
     display: grid;
-    grid-template-columns: 250px auto;
+    grid-template-columns: auto 105px;
+    padding: 4px;
+    grid-gap: 4px;
   }
   .create-form-selection{
     height: 100%;
-    border: 1px solid blue;
   }
   #create-form-content{
     position: relative;
     height: 100%;
-    // max-width: 45vw;
-    border: 1px solid red;
     display: flex;
     flex-direction: column;
+    background-color: #fff;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 2px;
   }
   .form-item-selection {
-    height: 50px;
-    width: 100%;
-    border: 1px solid green;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 2px;
+    background-color: rgb(233, 233, 233);
+    margin: 2px 0;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    &:hover{
+      background-color: rgb(223, 223, 223); 
+    }
+    &:active{
+      box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
+    }
+  }
+  #save-form-button{
+    margin: 4px 4px;
+    font-size: 16px;
+    font-weight: 500;    
   }
   .form-item {
-    background-color: rgb(243, 243, 243);
     cursor: move;
     position: relative;
     height: 100%;
@@ -205,9 +258,9 @@ export default {
   .form-item-option {
     width: 20px;
     height: 20px;
-    border: 1px solid gray;
+    border: 1px solid rgba(0,0,0,0.2);
     cursor: pointer;
-    background-color: white;
+    background-color: #ddd;
   }
   .edit-form-item {
     border-radius: 0 0 0 5px;

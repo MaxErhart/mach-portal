@@ -1,11 +1,16 @@
 <template>
   <div class="section-element">
-    <div class="item" v-html="generateHtml()"></div>
+    <div class="item">
+      <component :is="tag" class="item-content">
+        {{content}}
+      </component>      
+    </div>
+
 
     <div class="edit-element-window" v-if="editable">
       <section>
         <label for="content">Text:</label>
-        <textarea name="content" v-model="content"></textarea>
+        <textarea name="content" v-model="content" @change="updateElData()"></textarea>
       </section>
     </div>
 
@@ -17,6 +22,7 @@ export default {
   name: 'SecitonElement',
   props: {
     editable: Boolean,
+    id: String,
   },
   data() {
     return {
@@ -25,10 +31,20 @@ export default {
       tag: 'div'
     }
   },
+  mounted() {
+    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, content: this.content}});
+  },
+  beforeUnmount() {
+    this.$store.commit('deleteSelection', {id: this.id});
+  },  
   methods: {
     generateHtml() {
       return `<${this.tag} class="item-content">${this.content}</${this.tag}>`;
-    }
+    },
+    updateElData() {
+      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, content: this.content}});
+      console.log(this.$store.getters.getSelectionsData)
+    }    
   }
 }
 </script>
@@ -61,7 +77,6 @@ export default {
   .section-element {
     position: relative;
     width: 100%;
-
     float: left;
     padding: 3px;
   }

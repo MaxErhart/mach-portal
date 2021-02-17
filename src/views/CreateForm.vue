@@ -1,6 +1,6 @@
 <template>
   <div class="create-table">
-    <h1>Create Table</h1>
+    <h1>Create Form</h1>
     <div class="create-table-body">
       <FormCreator/>
     </div>
@@ -23,11 +23,13 @@ export default {
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 100%;
+    max-width: 800px;
   }
   .create-table-body {
-    border-radius: 10px;
     box-shadow: 0 2px 3px 0 rgba(0,0,0,.2);
     background-color: rgb(243, 243, 243);
-    height: 100%;
+    min-height: 500px;
+    width: 100%;
   }
 </style>

@@ -8,33 +8,33 @@
           <div class="tooltip-text">{{tooltip}}</div>
         </span>
       </label>
-      <input :type="inputType" :placeholder="placeholder">
+      <input id="input-main" :type="inputType" :placeholder="placeholder">
     </div>
 
     <div class="edit-element-window" v-if="editable">
       <section>
         <label for="labelName">Label Name:</label>
-        <input type="text" name="labelName" v-model="labelName">
+        <input type="text" name="labelName" v-model="labelName" @change="updateElData()">
       </section>
 
       <section>
         <label for="required">Required:</label>
-        <input id="checkbox-input" type="checkbox" name="required" v-model="required">
+        <input id="checkbox-input" type="checkbox" name="required" v-model="required" @change="updateElData()">
       </section>
 
       <section>
         <label for="help">Help Text:</label>
-        <input type="text" name="help" v-model="tooltip">
+        <input type="text" name="help" v-model="tooltip" @change="updateElData()">
       </section>
 
       <section>
         <label for="placeholder">Placeholder Text:</label>
-        <input type="text" name="placeholder" v-model="placeholder">
+        <input type="text" name="placeholder" v-model="placeholder" @change="updateElData()">
       </section>    
 
       <section>
         <label for="inputType">Placeholder Text:</label>
-        <select name="inputType" v-model="inputType">
+        <select name="inputType" v-model="inputType" @change="updateElData()">
           <option value="text">text</option>
           <option value="email">email</option>
           <option value="number">number</option>
@@ -52,6 +52,7 @@ export default {
   name: 'InputeElement',
   props: {
     editable: Boolean,
+    id: String,
   },
   data() {
     return {
@@ -59,16 +60,25 @@ export default {
       labelName: 'My Label',
       inputType: 'text',
       tag: 'input',
-      tooltip: "cfadadsasd",
+      tooltip: "",
       placeholder: "",
       required: false,
     }
   },
+  mounted() {
+    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, inputType: this.inputType, tooltip: this.tooltip, placeholder: this.placeholder, required: this.required}});
+  },
+  beforeUnmount() {
+    this.$store.commit('deleteSelection', {id: this.id});
+  },  
   methods: {
     generateHtml() {
       return `<div><label>${this.content}<span class="span-content" v-if="required">*</span>:</label><${this.tag} class="item-content"/></div>`;
-    }
-  }
+    },
+    updateElData() {
+      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, inputType: this.inputType, tooltip: this.tooltip, placeholder: this.placeholder, required: this.required}})
+    }    
+  },
 }
 </script>
 
@@ -117,7 +127,6 @@ export default {
       }
     }
   }
-
   input {
     user-select: auto !important;
     display: block;

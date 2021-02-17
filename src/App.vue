@@ -22,20 +22,18 @@
   </div>
   <div id="login-overlay" v-if="loginFormActive && !signedIn" @click.self="changeLoginFormActive(false)">
       <div id="login-body">
-        <!-- <form> -->
-          <h1>Sign In</h1>
-          <section>
-            <label for="username">Username</label>
-            <input v-model="username" spellcheck="false" id="username" name="username" type="text" placeholder=" " autocomplete="username" required>
-          </section>
+        <h1>Sign In</h1>
+        <section>
+          <label for="username">Username</label>
+          <input v-model="username" @keyup.enter="$refs.loginPwInput.focus()" spellcheck="false" id="username" name="username" type="text" placeholder=" " autocomplete="username" required>
+        </section>
 
-          <section>        
-            <label for="current-password">Password</label>
-            <input v-model="password" id="current-password" name="current-password" type="password" autocomplete="current-password" aria-describedby="password-constraints" required>
-          </section>
+        <section>        
+          <label for="current-password">Password</label>
+          <input v-model="password" @keyup.enter="login(username, password)" ref="loginPwInput" id="current-password" name="current-password" type="password" autocomplete="current-password" aria-describedby="password-constraints" required>
+        </section>
 
-          <button id="sign-in" @click="login(username, password)">Sign in</button>
-        <!-- </form> -->
+        <button class="kit-button" id="sign-in" @click="login(username, password)" ref="loginSubmitButton">Sign in</button>
       </div>
   </div>
 </template>
@@ -63,11 +61,9 @@ export default {
       method: 'post',
       url: 'https://www-3.mach.kit.edu/api/index.php',
     }).then((response)=>{
-      console.log(response.data)
       if(response.data){
         if(response.data.isLoggedIn) {
           this.$store.commit('login');
-          console.log(response.data)
         }
       }
 
@@ -99,18 +95,18 @@ export default {
   },
   methods: {
     login(username, password){
+      this.$refs.loginSubmitButton.focus();
 			axios({
 				method: 'post',
 				url: 'https://www-3.mach.kit.edu/api/login.php',
 				data: {username: username, password: password},
 			}).then((response)=>{
         console.log(response.data)
-        if(response.data[0].success) {
+        if(response.data.success) {
           this.$store.commit('login');
-          console.log(response.data)
         }
 
-			})  
+      })
     },
     onResize(){
       this.windowWidth = window.innerWidth;
@@ -119,12 +115,16 @@ export default {
       this.$store.commit('setCurrentRoute', route);
     },
     logout(){
-      this.$store.commit('logout');
-      this.$router.push({name: 'Home'})
+			axios({
+				method: 'post',
+				url: 'https://www-3.mach.kit.edu/api/logout.php',
+			}).then((response)=>{
+        if(response.data.success) {
+          this.$store.commit('logout');
+          this.$router.push({name: 'Home'})
+        }
+			})
     },
-    // login(username, password){
-    //   this.$store.commit('login', {username: username, password: password});
-    // },
     changeLoginFormActive(isActive){
       this.$store.commit('changeLoginFormActive', isActive);
     },
@@ -145,7 +145,7 @@ body {
     box-sizing: border-box;
 }
 
-button {
+.kit-button {
   box-shadow: none;
   border: none;
   display: block;
@@ -208,7 +208,10 @@ button {
 #main-body {
   width: 100%;
   background-color: #b1ded4;
-  padding: 20px;
+  padding: 20px 20px 0 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 #login-overlay {
@@ -222,16 +225,16 @@ button {
 }
 
 #login-body {
-  width: 600px;
+  min-width: 400px;
+  width: 100%;
+  max-width: 600px;
   padding: 10px;
   margin: auto;
   background-color: white;
   font-family: sans-serif;
   font-weight: 500;
-  // > * {
-    
-  // }
-  button {
+
+  .kit-button {
     margin: 30px 0;
   }
 
