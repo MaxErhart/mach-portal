@@ -21,10 +21,9 @@ function main($connection) {
   return $forms;
 }
 
-
-// if(!isset($_SESSION['isLoggedIn'])) {
-//   echo json_encode(array("error" => "not logged in"));
-// } else {
-  echo json_encode(array("success" => "success fetched forms", "forms" => main($connection)));
-// }
+if(!isset($_SESSION['isLoggedIn'])) {
+  echo json_encode(array("error" => "not logged in"));
+} else {
+  echo json_encode(array("success" => "successfully fetched forms", "forms" => main($connection)));
+}
 ?>

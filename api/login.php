@@ -10,7 +10,10 @@ $dbPassword = "motor25";
 
 $connection = new mysqli($serverName, $user, $dbPassword, $dbName);
 
-if(!isset($_SESSION['isLoggedIn'])) {
+
+
+if($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['isLoggedIn'])) {
+// log in as guest
   $_POST = json_decode(file_get_contents("php://input"), true);
   $username = $_POST['username'];
   $password = $_POST['password'];
@@ -33,10 +36,36 @@ if(!isset($_SESSION['isLoggedIn'])) {
       }      
     }
   }
-} else {
-  echo json_encode(array('success' => true,'error' => NULL, 'info' => $_SESSION));
+} else if($_SERVER['REQUEST_METHOD'] === 'GET') {
+// check if shib logged in
+  $headerString = "";
+  $first = true;
+  foreach($_COOKIE as $key => $value) {
+    if($first) {
+      $headerString .=$key."=".$value;
+      $first = false;
+    } else {
+      $headerString .="; ".$key."=".$value;
+    } 
+  }
+  $curl = curl_init();
+  curl_setopt($curl, CURLOPT_URL, "https://www-3.mach.kit.edu/Shibboleth.sso/Session");
+  curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+  curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+  curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+    "Cookie: ".$headerString
+  ));
+  $output = curl_exec($curl);
+  curl_close($curl);
+  if($output == "{}\n") {
+    echo json_encode(array('error' => "not logged in"));
+    session_destroy();
+  } else if(!isset($_SESSION['isLoggedIn'])){
+    $_SESSION['isLoggedIn'] = true;
+    echo json_encode(array('success' => true,'error' => NULL, 'info' => $_SESSION, 'shib' => json_decode($output)));
+  } else {
+    echo json_encode(array('success' => true,'error' => NULL, 'info' => $_SESSION, 'shib' => json_decode($output)));
+  }
 }
-
- 
-
 ?>
