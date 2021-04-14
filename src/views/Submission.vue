@@ -6,13 +6,21 @@
         Submissions for form: <span>{{form.name}}</span>
       </div>
       <div id="form-submissions-body" :style="gridStyle">
-        <div class="column" v-for="col in grid" :key="col">
-          <div class="row" v-for="(item, key) in col" :key="key">
-            <div class="grid-item" v-for="val in item" :key="val">
-              {{val}}
-            </div>
+        <div id="col-names" v-for="col in colNames" :key="col">
+          <template v-for="(item,name) in col" :key="item">
+            <template v-if="name == 'data'">{{item}}</template>
+          </template>
+        </div>
+
+        <div class="row" v-for="row in data" :key="row">
+          <div class="row-item" v-for="item in row" :key="item">
+            <template v-for="(value, key) in item" :key="value">
+              <a v-if="key == 'file'" :href="fileBaseUrl.concat(value)">{{value.split("/").pop().split("_").slice(4).join("_")}}</a>
+              <template v-if="key == 'data'">{{value}}</template>
+            </template>
           </div>
         </div>
+
       </div>
     </div>
     
@@ -33,32 +41,50 @@ export default {
     }
   },
   computed: {
-    grid: function() {
-      var grid = [{id: ['id']}];
-      for(let i=0; i<this.elements.length; i++) {
-        let temp = {}
-        temp[this.elements[i].elementId] = [`${this.elements[i].data.labelName}`]
-        grid.push(temp);
-      }
-
-      for(let i=0; i<grid.length; i++) {
-        let key = Object.keys(grid[i])[0];
-        for(let j=0; j<this.submissions.length; j++) {
-          if(key == 'id') {
-            grid[i][key].push(this.submissions[j][key])
+    fileBaseUrl: function() {
+      return this.$store.getters.getBaseFileUrl
+    },
+    data: function() {
+      var data = []
+      for(let i=0; i<this.submissions.length; i++) {
+        var row = []
+        for(let j=0; j<this.colNames.length; j++) {
+          const temp = {}
+          if('type' in this.colNames[j]) {
+            if(this.colNames[j].type == 'file') {
+              temp['file'] = this.submissions[i]['files'][this.colNames[j].id]
+            } else if(this.colNames[j].type == 'data'){
+              temp['file'] = this.submissions[i]['data'][this.colNames[j].id]
+            }
           } else {
-            grid[i][key].push(this.submissions[j]['data'][key])
-          }          
-          
+            temp['data'] = this.submissions[i][this.colNames[j].id]
+          }
+          row.push(temp)
         }
+        data.push(row)
       }
-      console.log(this.elements)
-      console.log(grid)
-      return grid
+      return data
     },
     gridStyle: function() {
-      console.log(this.grid[0]['id'].length)
-      return {gridTemplateRows: `repeat(${this.grid[0]['id'].length}, auto)`, gridTemplateColumns: `repeat(${this.grid.length}, auto)`}
+      console.log('data: ' ,this.data)
+      return {gridTemplateColumns: `repeat(${this.colNames.length}, auto)`}
+    },
+    colNames: function() {
+      var cols = [{id: 'id', data: 'id'}, {id: 'firstName', data: 'First Name'}, {id: 'lastName', data: 'Last Name'}]
+      for(let i=0; i<this.elements.length; i++) {
+        const temp = {}
+        if(this.elements[i].type == 'file') {
+          temp['type'] = 'file'
+        } else {
+          temp['type'] = 'data'
+        }
+        temp['id'] = this.elements[i].elementId
+        temp['data'] = this.elements[i].data.labelName
+        cols.push(temp)
+      }
+      cols.push({id: 'dateOfSubmission', data: 'Date'})
+      console.log(cols)
+      return cols
     }
   },  
   beforeCreate() {
@@ -109,7 +135,7 @@ export default {
     display: grid;
     grid-gap: 4px;
     row-gap: 4px;
-    grid-auto-flow: column;
+    grid-auto-rows: auto;
   }
 
   .column {

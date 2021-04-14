@@ -18,7 +18,7 @@ function main($connection, $id) {
   $formQuery = "SELECT `id`, `name` FROM `forms` WHERE `id`='".$id."'";
   $submissionsQuery = "SELECT * FROM `submissions` WHERE `formId`='".$id."'";
   if($result = $connection->query($formQuery)){
-    while($row = $result->fetch_assoc()) {
+    while($row = $result->fetch_assoc()) {      
       $submissions["metadata"] = $row;
     }
   }
@@ -26,6 +26,10 @@ function main($connection, $id) {
     $submissions["submissions"] = [];
     while($row = $result->fetch_assoc()) {
       $row["data"] = json_decode($row["data"]);
+      $row["files"] = json_decode($row["files"]);
+      $dateTime = new DateTime($row["dateOfSubmission"]);
+      $dateTime = $dateTime->format('d.m.Y');
+      $row["dateOfSubmission"] = $dateTime;      
       array_push($submissions["submissions"], $row);
     }
   }
@@ -33,6 +37,14 @@ function main($connection, $id) {
   $elementsQuery = "SELECT `type`, `data`, `position`, `elementId` FROM `elements` WHERE";
   $first = true;
   foreach($submissions["submissions"][0]["data"] as $elementId => $value) {
+    if($first) {
+      $elementsQuery .= " `elementId`='".$elementId."'";
+      $first = false;
+    } else {
+      $elementsQuery .= " OR `elementId`='".$elementId."'";
+    }
+  }
+  foreach($submissions["submissions"][0]["files"] as $elementId => $value) {
     if($first) {
       $elementsQuery .= " `elementId`='".$elementId."'";
       $first = false;

@@ -8,7 +8,9 @@
           <div class="tooltip-text">{{tooltip}}</div>
         </span>
       </label>
-      <input id="input-main" :type="inputType" :placeholder="placeholder"/>
+      <select id="input-main">
+        <option value="1">1</option>
+      </select>
     </div>
 
     <div class="edit-element-window" v-if="editable">
@@ -28,19 +30,14 @@
       </section>
 
       <section>
-        <label for="placeholder">Placeholder Text:</label>
-        <input type="text" name="placeholder" v-model="placeholder" @change="updateElData()">
-      </section>    
+        <label for="num-options"></label>
+        <input type="number" name="num-option" v-model="numOptions" @change="updateElData()">
+      </section>   
 
-      <section>
-        <label for="inputType">Input Type:</label>
-        <select name="inputType" v-model="inputType" @change="updateElData()">
-          <option value="text">text</option>
-          <option value="email">email</option>
-          <option value="number">number</option>
-          <option value="date">date</option>
-        </select>
-      </section>
+      <section v-for="index in parseInt(numOptions)" :key="index">
+        <label :for="index">Option {{index}}:</label>
+        <input type="text" :name="index" v-model="options[index]" @change="updateElData()">
+      </section>   
 
     </div>
 
@@ -58,15 +55,15 @@ export default {
     return {
       type: 'input',
       labelName: 'My Label',
-      inputType: 'text',
       tag: 'input',
       tooltip: "",
-      placeholder: "",
       required: false,
+      numOptions: 1,
+      options: []
     }
   },
   mounted() {
-    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, inputType: this.inputType, tooltip: this.tooltip, placeholder: this.placeholder, required: this.required}});
+    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required}});
   },
   beforeUnmount() {
     this.$store.commit('deleteSelection', {id: this.id});
@@ -76,7 +73,7 @@ export default {
       return `<div><label>${this.content}<span class="span-content" v-if="required">*</span>:</label><${this.tag} class="item-content"/></div>`;
     },
     updateElData() {
-      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, inputType: this.inputType, tooltip: this.tooltip, placeholder: this.placeholder, required: this.required}})
+      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required}})
     }    
   },
 }

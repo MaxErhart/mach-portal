@@ -1,37 +1,53 @@
 <template>
   <div class="input-element">
     <div class="item">
-      <label for="input-field">{{labelName}}
+      <label id="file-upload-label" :for="id">{{labelName}}
         <span class="required-span" v-if="required">*</span>
         <span class="tooltip-element" v-if="tooltip != ''">
           ?
           <div class="tooltip-text">{{tooltip}}</div>
         </span>
       </label>
-      <input :name="id" :type="inputType" :placeholder="placeholder"/>
+      <input :id="id" :name="id" type="file" ref="file" @change="fileU()">
+      <label :for="id" id="file-upload-text" :class="{active: fileUploaded}">
+        <template v-if="!fileUploaded">
+          <span><img :src="require(`@/assets/upload.svg`)"></span>
+          <span>Upload File</span>
+        </template>
+        <template v-else >{{filename}}</template>  
+      </label>
     </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'InputeElement',
+  name: 'FormFileUploadElement',
   props: {
     id: String,
     labelName: String,
-    inputType: String,
-    tag: String,
     tooltip: String,
-    placeholder: String,
-    required: Boolean,    
+    required: Boolean,
   },
   data() {
     return {
-
+      filename: null,
+      fileUploaded: false,
     }
-  },  
+  },
+  computed: {
+  },
   methods: {
-   
+    fileU() {
+      const file = this.$refs['file'].value.split('\\')
+      console.log(file)
+      if(file[file.length-1] == "") {
+        this.fileUploaded = false
+      } else {
+        this.fileUploaded = true
+        this.filename = file[file.length-1]
+      }
+    }
   },
 }
 </script>
@@ -75,13 +91,7 @@ export default {
     }
   }
   input {
-    user-select: auto !important;
-    display: block;
-    width: 100%;
-    height: 40px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    padding: 15px !important;
+    display: none;
   }
   label {
     display: flex;
@@ -96,4 +106,25 @@ export default {
       margin: 0px 0;    
     } 
   }
+  #file-upload-text {
+    border:1px solid #2c3e50;
+    height: 40px;
+    justify-content: center;
+    box-shadow: 0 0 2px 1px rgba(0,0,0,0.2);
+
+    background: linear-gradient(to right, rgba(0, 255, 0, 0.55) 50%, white 50%);
+    background-size: 200% 100%;
+    background-position: right bottom;rgba
+
+    > span:first-child {
+      margin-right: 5px;
+    }
+    &:hover {
+      box-shadow: inset 0 0 2px 1px rgba(0,0,0,0.2);
+    }
+    &.active {
+    background-position: left bottom;
+    transition:all 600ms ease;
+    }
+  } 
 </style>

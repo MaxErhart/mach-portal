@@ -34,7 +34,14 @@ function main($connection) {
     }
     $index = 0;
     foreach($elements as $element) {
-      $query = "INSERT INTO `forms`.`elements` (type, data, formId, position, elementId) VALUES ('".$element['type']."', '".json_encode($element['data'])."', (".$formForeignKey."), '".$index."', '".$element['id']."')";
+      if($element["type"] == "file") {
+        $pathSegments = explode("\\", $element["data"]["path"]);
+        $element["data"]["path"] = "";
+        foreach($pathSegments as $segment) {
+          $element["data"]["path"] .= $segment."/";
+        }
+      }
+      $query = "INSERT INTO `forms`.`elements` (type, data, formId, position, elementId) VALUES ('".$element['type']."', '".json_encode($element['data'], JSON_UNESCAPED_UNICODE)."', (".$formForeignKey."), '".$index."', '".$element['id']."')";
       if($result = $connection->query($query)) {
         echo json_encode(array("error" => NULL));
       } else { 

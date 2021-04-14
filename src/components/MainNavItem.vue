@@ -35,7 +35,6 @@ export default {
     fill: #2c3e50;
   }
   .nav-item-main {
-
     display: flex;
     a {
       text-decoration: none;

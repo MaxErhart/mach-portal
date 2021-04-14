@@ -1,51 +1,59 @@
 <template>
   <form id="form" v-if="form.metadata!==null">
-      <div id="form-header">
+      <div id="form-header" >
         {{form.metadata.name}}
       </div>
       <div id="form-body">
+        
         <section class="form-element" v-for="el in form.elements" :key="el">
-          <component class="form-componen" :is="componentDic[el.tag]" v-bind="el">{{el.data.content}}</component>
+          <component class="form-componen" :is="componentDic[el.type]" v-bind="el"></component>
         </section>
       </div>
-      <div id="form-footer">
-        <button @click.prevent="submitForm()">Senden</button>
+      <div id="form-footer" >
+        <button class="kit-button" @click.prevent="submitForm()">Senden</button>        
       </div>
   </form>
+  <div id="loading" v-else>Loading...</div>
 </template>
 
 <script>
 import axios from "axios";
 import FormInputElement from '../components/FormInputElement.vue'
-
+import FormHeaderElement from '../components/FormHeaderElement.vue'
+import FormSectionElement from '../components/FormSectionElement.vue'
+import FormFileUploadElement from '../components/FormFileUploadElement.vue'
 export default {
   name: 'DisplayForm',
   components: {
-    FormInputElement
+    FormInputElement,
+    FormHeaderElement,
+    FormSectionElement,
+    FormFileUploadElement
   },
   data() {
     return {
       form : {metadata: null, elements: []},
-      componentDic: {input: 'FormInputElement'},
+      componentDic: {input: 'FormInputElement', header: 'FormHeaderElement', section: 'FormSectionElement', file: 'FormFileUploadElement'},
       hasActiveInput: null,
+      id: null,
     }
   },
-  computed: {
-    id: function() {
-      return this.$route.params.id;
-    }
-  },
+  beforeRouteUpdate(to, from, next) {
+    this.id = to.params.id
+    this.getFormData(this.id)
+    next()
+  },  
   watch: {
     id(newId, oldId) {
       if(this.$route.fullPath.split("/")[this.$route.fullPath.lenght-2] == 'form') {
         if(newId != oldId) {
-          console.log(this.$route.fullPath.split("/"))
           this.getFormData(newId);
         }
       }
     }
   },
   mounted() {
+    this.id= this.$route.params.id
     this.getFormData(this.id);
   },
   methods: {
@@ -55,7 +63,6 @@ export default {
         url: 'https://www-3.mach.kit.edu/api/getForm.php',
         data: {id: id}
       }).then((response) => {
-        console.log(response.data)
         if(response.data.success) {
           this.form = {metadata: null, elements: []}
           this.form.metadata = response.data.metadata
@@ -74,18 +81,16 @@ export default {
       })
     },
     submitForm() {
-      var data = {}
       var formData = new FormData(document.getElementById("form"))
-      for(var pair of formData.entries()) {
-        data[`${pair[0]}`] = pair[1]
-      }      
-      axios({
-        method: 'post',
-        url: 'https://www-3.mach.kit.edu/api/submitForm.php',
-        data: {metadata: this.form.metadata, data: data},
-      }).then(response => {
-        console.log(response.data)
-      })
+      formData.append('formId', this.form.metadata.id)
+      axios.post( 'https://www-3.mach.kit.edu/api/submitForm.php',
+        formData,
+        {
+          headers: {
+              'Content-Type': 'multipart/form-data'
+          }
+        }
+      )   
     }
   }
 
@@ -95,7 +100,7 @@ export default {
 
 <style scoped lang="scss">
   #form {
-    background-color: white;
+    background-color: rgb(238, 238, 238);;
     width: 100%;
     max-width: 860px;
     padding: 20px 10px;
@@ -111,7 +116,15 @@ export default {
   #form-body {
     height: 100%;
     margin: 20px 0;
+    padding: 5px;
   }
-  // #form-footer {
-  // }
+  #form-footer {
+    padding: 5px;    
+  }
+  #loading {
+    background-color: rgb(238, 238, 238);
+    width: 100%;
+    max-width: 860px;
+    padding: 20px 10px;
+  }
 </style>

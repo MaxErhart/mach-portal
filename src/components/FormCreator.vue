@@ -26,6 +26,8 @@
         <div class="form-item-selection" v-on:click="addSelection('header')">Header</div>
         <div class="form-item-selection" v-on:click="addSelection('section')">Section</div>
         <div class="form-item-selection" v-on:click="addSelection('input')">Input</div>
+        <div class="form-item-selection" v-on:click="addSelection('file')">File Upload</div>
+        <div class="form-item-selection" v-on:click="addSelection('selection')">Selection</div>
       </div>      
     </div>
     <button class="kit-button" id="save-form-button" v-on:click="saveForm()">Safe Form</button>
@@ -37,12 +39,16 @@ import axios from "axios";
 import HeaderElement from './HeaderElement.vue'
 import SectionElement from './SectionElement.vue'
 import InputElement from './InputElement.vue'
+import FileUploadElement from './FileUploadElement.vue'
+import SelectionElement from './SelectionElement.vue'
 export default {
   name: 'FormCreator',
   components: {
     HeaderElement,
     SectionElement,
-    InputElement
+    InputElement,
+    FileUploadElement,
+    SelectionElement
   },
   data() {
     return {
@@ -60,7 +66,7 @@ export default {
   },
   methods: {
     async addSelection(item){
-      var id = `${Math.floor(Math.random()*100000000)}`
+      var id = `${Math.floor(Math.random()*100000000000000)}`
       var selection = {component: "none", props: {editable: false}, id: id, top: 0, bottom: 0};
       if(item == 'header'){
         selection = {component: "HeaderElement", props: {editable: false, id: id}, id: id, top: 0, bottom: 0};
@@ -68,6 +74,10 @@ export default {
         selection = {component: "SectionElement", props: {editable: false, id: id}, id: id, top: 0, bottom: 0};
       } else if(item == 'input') {
         selection = {component: "InputElement", props: {editable: false, id: id}, id: id, top: 0, bottom: 0};
+      } else if(item == 'file') {
+        selection = {component: "FileUploadElement", props: {editable: false, id: id}, id: id, top: 0, bottom: 0};
+      } else if(item == 'selection') {
+        selection = {component: "SelectionElement", props: {editable: false, id: id}, id: id, top: 0, bottom: 0};
       }
       this.selections.push(selection)
       await this.$nextTick()
@@ -163,9 +173,7 @@ export default {
 				method: 'post',
 				url: 'https://www-3.mach.kit.edu/api/saveForm.php',
 				data: {formName: this.formName, elements: this.$store.getters.getSelectionsData},
-			}).then((response) => {
-        console.log(response.data)
-      })   
+			})   
     },
   }
 

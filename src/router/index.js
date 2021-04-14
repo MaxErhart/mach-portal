@@ -5,6 +5,7 @@ import CreateForm from '../views/CreateForm.vue'
 import DisplayForm from '../views/DisplayForm.vue'
 import AllForms from '../views/AllForms.vue'
 import Submission from '../views/Submission.vue'
+import Theses from '../views/Theses.vue'
 
 const routes = [
   {
@@ -42,6 +43,17 @@ const routes = [
   {
     path: '/form/:id',
     component: DisplayForm
+  },
+  {
+    path: '/theses',
+    name: Theses,
+    component: Theses,
+    children: [
+      {
+        path: 'newthesis/:id',
+        component: DisplayForm
+      }
+    ]
   }
 ]
 

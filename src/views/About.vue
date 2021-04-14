@@ -6,7 +6,7 @@
 
 <script>
 export default {
-  name: 'About',
+  name: 'Theses',
   components: {
   },
   data() {
@@ -15,7 +15,7 @@ export default {
     }
   },  
   mounted() {
-    this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[2])
+    this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[3])
   },  
 }
 </script>

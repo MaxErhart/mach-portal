@@ -63,6 +63,19 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['isLoggedIn'])) {
     session_destroy();
   } else if(!isset($_SESSION['isLoggedIn'])){
     $_SESSION['isLoggedIn'] = true;
+    $attributes = json_decode($output, true)["attributes"];
+    foreach($attributes as $attribute) {
+      $valName = NULL;
+      $valuesList = NULL;
+      foreach($attribute as $name => $values) {
+        if($name=="name") {
+          $valName = $values;
+        } else {
+          $valuesList = $values;
+        }
+      }
+      $_SESSION[$valName] = $valuesList;
+    }
     echo json_encode(array('success' => true,'error' => NULL, 'info' => $_SESSION, 'shib' => json_decode($output)));
   } else {
     echo json_encode(array('success' => true,'error' => NULL, 'info' => $_SESSION, 'shib' => json_decode($output)));

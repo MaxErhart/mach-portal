@@ -1,7 +1,7 @@
 <template>
   <div id="main" :style="{'grid-template-columns': windowWidth>750 ? '200px auto' : '64px auto'}">
     <div id="main-nav" :style="{'padding': styles.mainNavPadding, 'width': (windowWidth>750 ? 200 : 64) + 'px'}">
-      <div id="active-indicator" v-if="signedIn && windowWidth>750" :style="{top: (currentRoute.index + 0.5)*navItemHeight - 3  + 'px', padding: styles.mainNavPadding}">
+      <div id="active-indicator" v-if="windowWidth>750" :style="{top: (currentRoute.index + 0.5)*navItemHeight - 3  + 'px', padding: styles.mainNavPadding}">
         <svg>
           <circle cx="3" cy="3" r="3" stroke="black" stroke-width="0" />
         </svg> 
@@ -15,9 +15,11 @@
         <img src="@/assets/signOut.svg" alt="Sign Out">
         <span class="button-span" v-if="windowWidth>750">Sign Out</span>
       </div>
-      <div id="main-nav-user" v-if="signedIn">
-        <img src="@/assets/user.svg">
-        <span class="button-span" v-if="windowWidth>750">{{temp}}</span>        
+      <div id="main-nav-user" v-if="signedIn && userInformation!=null">
+        <div id="user-icon">
+          <img src="@/assets/user.svg">
+        </div>
+        <div id="user-name" v-if="windowWidth>750">{{userInformation.givenName}} {{userInformation.sn}}</div>
       </div>
     </div>
     <div id="main-body">
@@ -45,7 +47,6 @@ export default {
       windowWidth: window.innerWidth,
       username: '',
       password: '',
-      temp: null,
     }
   },
   beforeCreate() {
@@ -54,12 +55,20 @@ export default {
       url: 'https://www-3.mach.kit.edu/api/login.php'
     }).then(response => {
       if(response.data.success) {
-        console.log(response.data)
         localStorage.isLoggedIn = true;
-        this.$store.commit('login');
-        this.temp = response.data.shib.attributes[0].values[0]
+        var userInformation = {}
+        response.data.shib.attributes.forEach(el => {
+          if(el.values.length == 1) {
+            userInformation[el.name] = el.values[0]
+          } else {
+            userInformation[el.name] = el.values
+          }
+        })
+        this.$store.commit('login', userInformation);
+        localStorage.userInformation = JSON.stringify(userInformation)
       } else {
         localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userInformation');
         this.$store.commit('logout');
       }
     })
@@ -89,6 +98,9 @@ export default {
     loginFormActive() {
       return this.$store.getters.getLoginForm;
     },
+    userInformation() {
+      return this.$store.getters.getUserInformation
+    }
   },
   methods: {
     onResize(){
@@ -186,16 +198,23 @@ body {
 }
 
 #main-nav-user {
+  // border: 1px solid black;
   margin-top: auto;
   margin-bottom: 20%;
   padding: 15px 10px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   color:#2c3e50;
   display: flex;
   flex-direction: row;
-  justify-content: center;
-  align-items: center;
+  padding-left: 16px;
+  > #user-icon {
+    margin-right: 8px;
+  }
+  > #user-name {
+    display: flex;
+    align-items: center;
+  }
 }
 
 #main-body {

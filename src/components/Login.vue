@@ -147,8 +147,7 @@ input[type=password]:not(:focus):invalid {
 
 #tabs {
   overflow: hidden;
-  border: 1px solid #ccc;
-  background-color: #f1f1f1;
+  background-color: #ccc;
   display: grid;
   grid-template-columns: 1fr 1fr;
   .tab {
@@ -162,7 +161,7 @@ input[type=password]:not(:focus):invalid {
       background-color: #ddd;
     }
     &.active {
-      background-color: #ccc;
+      background-color: #f1f1f1;
     }       
   }
 }

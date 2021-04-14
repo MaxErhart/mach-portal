@@ -8,7 +8,14 @@
           <div class="tooltip-text">{{tooltip}}</div>
         </span>
       </label>
-      <input id="input-main" :type="inputType" :placeholder="placeholder"/>
+
+      <input id="file-input" type="file">
+      <label id="file-upload-text">
+          <span><img :src="require(`@/assets/upload.svg`)"></span>
+          <span>Upload File</span>
+      </label>
+
+
     </div>
 
     <div class="edit-element-window" v-if="editable">
@@ -23,23 +30,13 @@
       </section>
 
       <section>
+        <label for="rel-path-input">Path:</label>
+        <input id="rel-path-input" type="text" name="path" v-model="path" @change="updateElData()">
+      </section>      
+
+      <section>
         <label for="help">Help Text:</label>
         <input type="text" name="help" v-model="tooltip" @change="updateElData()">
-      </section>
-
-      <section>
-        <label for="placeholder">Placeholder Text:</label>
-        <input type="text" name="placeholder" v-model="placeholder" @change="updateElData()">
-      </section>    
-
-      <section>
-        <label for="inputType">Input Type:</label>
-        <select name="inputType" v-model="inputType" @change="updateElData()">
-          <option value="text">text</option>
-          <option value="email">email</option>
-          <option value="number">number</option>
-          <option value="date">date</option>
-        </select>
       </section>
 
     </div>
@@ -49,24 +46,23 @@
 
 <script>
 export default {
-  name: 'InputeElement',
+  name: 'FileUploadElement',
   props: {
     editable: Boolean,
     id: String,
   },
   data() {
     return {
-      type: 'input',
+      type: 'file',
       labelName: 'My Label',
-      inputType: 'text',
       tag: 'input',
       tooltip: "",
-      placeholder: "",
       required: false,
+      path: "",
     }
   },
   mounted() {
-    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, inputType: this.inputType, tooltip: this.tooltip, placeholder: this.placeholder, required: this.required}});
+    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {path: this.path, tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required}});
   },
   beforeUnmount() {
     this.$store.commit('deleteSelection', {id: this.id});
@@ -76,7 +72,7 @@ export default {
       return `<div><label>${this.content}<span class="span-content" v-if="required">*</span>:</label><${this.tag} class="item-content"/></div>`;
     },
     updateElData() {
-      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, inputType: this.inputType, tooltip: this.tooltip, placeholder: this.placeholder, required: this.required}})
+      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {path: this.path, tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required}})
     }    
   },
 }
@@ -176,4 +172,35 @@ export default {
       margin: 5px 0;
     }
   }
+  #file-upload-text {
+    border:1px solid #2c3e50;
+    height: 40px;
+    justify-content: center;
+    box-shadow: 0 0 2px 1px rgba(0,0,0,0.2);
+
+    background: linear-gradient(to right, rgba(0, 255, 0, 0.781) 50%, white 50%);
+    background-size: 200% 100%;
+    background-position: right bottom;rgba
+
+    > span:first-child {
+      margin-right: 5px;
+    }
+    &:hover {
+      box-shadow: inset 0 0 2px 1px rgba(0,0,0,0.2);
+    }
+    &.active {
+    background-position: left bottom;
+    transition:all 600ms ease;
+    }
+  } 
+  #file-input {
+    position: absolute;
+    z-index: -1;
+    top: 6px;
+    left: 0;
+    font-size: 15px;
+    color: rgb(153,153,153);
+    display: none;
+
+  }   
 </style>
