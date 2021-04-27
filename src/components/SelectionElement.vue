@@ -9,7 +9,7 @@
         </span>
       </label>
       <select id="input-main">
-        <option value="1">1</option>
+        <option v-for="(option, index) in options"  :key="index" :value="index">{{options[index]}}</option>
       </select>
     </div>
 
@@ -36,7 +36,7 @@
 
       <section v-for="index in parseInt(numOptions)" :key="index">
         <label :for="index">Option {{index}}:</label>
-        <input type="text" :name="index" v-model="options[index]" @change="updateElData()">
+        <input type="text" :name="index" v-model="options[index-1]" @change="updateElData()">
       </section>   
 
     </div>
@@ -46,16 +46,16 @@
 
 <script>
 export default {
-  name: 'InputeElement',
+  name: 'SelectionElement',
   props: {
     editable: Boolean,
     id: String,
   },
   data() {
     return {
-      type: 'input',
+      type: 'selection',
       labelName: 'My Label',
-      tag: 'input',
+      tag: 'select',
       tooltip: "",
       required: false,
       numOptions: 1,
@@ -63,17 +63,14 @@ export default {
     }
   },
   mounted() {
-    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required}});
+    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required, numOptions: this.numOptions, options: this.options}});
   },
   beforeUnmount() {
     this.$store.commit('deleteSelection', {id: this.id});
   },  
   methods: {
-    generateHtml() {
-      return `<div><label>${this.content}<span class="span-content" v-if="required">*</span>:</label><${this.tag} class="item-content"/></div>`;
-    },
     updateElData() {
-      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required}})
+      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required, numOptions: this.numOptions, options: this.options}})
     }    
   },
 }

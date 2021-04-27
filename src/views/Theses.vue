@@ -23,16 +23,16 @@
       <div id="theses-body" v-else>
         <div class="col-names" v-for="item in colNames" :key="item">{{item}}</div>
         <div class="row" :class="{odd: index%2 != 0}" v-for="(row, index) in data" :key="row">
-          <div class="row-item" v-for="(item, name) in row" :key="name">
+          <div class="row-item" v-for="(item, name) in row.displayData" :key="name">
             <a v-if="name=='VAThema'" :href="`https://www-3.mach.kit.edu/dfiles/${item.file}`">{{item.title}}</a>
             <a v-else-if="name=='Ansp_Email'" :href="`mailto:${item}`">{{item}}</a>
             <template v-else>
               {{item}}
               <div class="row-options" v-if="name=='DatumX' && rowModRights">
-                <div class="option">
+                <!-- <div class="option">
                   <img :src="require(`@/assets/edit.svg`)">
-                </div>
-                <div class="option">
+                </div> -->
+                <div class="option" @click="deleteThesis(row.notDisplayData)">
                   <img :src="require(`@/assets/delete.svg`)">
                 </div>
               </div>
@@ -50,7 +50,7 @@
 
 <script>
 import axios from "axios";
-// import func from '../../vue-temp/vue-editor-bridge';
+
 export default {
   name: 'About',
   components: {
@@ -119,14 +119,13 @@ export default {
       axios({
         method: 'post',
         url: 'https://www-3.mach.kit.edu/api/theses.php',
-        data: {theses: this.activeTab == 0 ? 'bc' : 'ma', limit: [0, 50], offset: this.oldNewDataOffset, getOldData: this.getOldData}
+        data: {thesis: this.activeTab == 0 ? 'bc' : 'ma', limit: [0, 50], offset: this.oldNewDataOffset, getOldData: this.getOldData}
       }).then(response => {
-        console.log(response.data)
         this.data = response.data.data;
         this.tabLoading = false;
         this.getOldData = response.data.oldData
         this.oldNewDataOffset = response.data.offset
-        console.log(this.data)   
+        console.log(response.data)  
       })
     },
     infiniteScroll() {
@@ -141,7 +140,7 @@ export default {
         axios({
           method: 'post',
           url: 'https://www-3.mach.kit.edu/api/theses.php',
-          data: {theses: this.activeTab == 0 ? 'bc' : 'ma', limit: [lowerLimit, 50], offset: this.oldNewDataOffset, getOldData: this.getOldData}
+          data: {thesis: this.activeTab == 0 ? 'bc' : 'ma', limit: [lowerLimit, 50], offset: this.oldNewDataOffset, getOldData: this.getOldData}
         }).then(response => {
           this.data = this.data.concat(response.data.data);
           this.infiniteScrollLoading = false
@@ -162,6 +161,15 @@ export default {
         }
       }
       this.open = !this.open
+    },
+    deleteThesis(thesisData) {
+      axios({
+        method: 'post',
+        url: 'https://www-3.mach.kit.edu/api/editTheses.php',
+        data: {thesis: this.activeTab == 0 ? 'bc' : 'ma', mode: 'delete', metaData: thesisData}
+      }).then(response => {
+        console.log(response)
+      })
     }
   }
 }

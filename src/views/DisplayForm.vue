@@ -22,18 +22,20 @@ import FormInputElement from '../components/FormInputElement.vue'
 import FormHeaderElement from '../components/FormHeaderElement.vue'
 import FormSectionElement from '../components/FormSectionElement.vue'
 import FormFileUploadElement from '../components/FormFileUploadElement.vue'
+import FormSelectionElement from '../components/FormSelectionElement.vue'
 export default {
   name: 'DisplayForm',
   components: {
     FormInputElement,
     FormHeaderElement,
     FormSectionElement,
-    FormFileUploadElement
+    FormFileUploadElement,
+    FormSelectionElement
   },
   data() {
     return {
       form : {metadata: null, elements: []},
-      componentDic: {input: 'FormInputElement', header: 'FormHeaderElement', section: 'FormSectionElement', file: 'FormFileUploadElement'},
+      componentDic: {input: 'FormInputElement', header: 'FormHeaderElement', section: 'FormSectionElement', file: 'FormFileUploadElement', selection: 'FormSelectionElement'},
       hasActiveInput: null,
       id: null,
     }
@@ -89,6 +91,9 @@ export default {
           headers: {
               'Content-Type': 'multipart/form-data'
           }
+        }
+      ).then((response) => {
+          console.log(response.data)
         }
       )   
     }

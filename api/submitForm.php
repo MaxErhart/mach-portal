@@ -11,15 +11,13 @@ $dbPassword = "motor25";
 $connection = new mysqli($serverName, $user, $dbPassword, $dbName);
 
 function main($connection) {
-  // $_POST = json_decode(file_get_contents("php://input"), true);
   $files = array();
   $defaultPath = "D:\inetpub\MPortal\dfiles\\";
   $firstName = $_SESSION["givenName"][0];
   $lastName = $_SESSION["sn"][0];
   $uniqId = uniqid();
+  print_r($_POST);
   foreach($_FILES as $id => $file) {
-    // $filetype = explode(".", $_FILES[$id]["name"]);
-    // $filetype = array_pop($filetype);
     $filename = $firstName."_".$lastName."_".$id."_".$uniqId."_".$_FILES[$id]["name"];
     $query = "SELECT (data) from `forms`.`elements` WHERE `elementId` = '".$id."'";
     if($result = $connection->query($query)) {

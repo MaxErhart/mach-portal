@@ -55,12 +55,12 @@ $elementsDicMa = array(
   "XInfo" => "82199105"
 );
 $table = NULL;
-if(isset($_POST["theses"])) {
-  if($_POST["theses"] == "bc") {
+if(isset($_POST["thesis"])) {
+  if($_POST["thesis"] == "bc") {
     $table = "bc_angebot";
     $formId = "65";
     $elementsDic = $elementsDicBc;
-  } else if($_POST["theses"] == "ma") {
+  } else if($_POST["thesis"] == "ma") {
     $table = "ma_angebot";
     $formId = "66";
     $elementsDic = $elementsDicMa;
@@ -70,7 +70,7 @@ if(isset($_POST["theses"])) {
 
 $data = [];
 $oldData = $_POST["getOldData"];
-$queryNewTheses = "SELECT `dateOfSubmission`,`data`,`files` FROM `forms`.`submissions` WHERE `formId`='".$formId."' ORDER BY `dateOfSubmission` DESC LIMIT ".$_POST["limit"][0].",".$_POST["limit"][1];
+$queryNewTheses = "SELECT `id`,`dateOfSubmission`,`data`,`files` FROM `forms`.`submissions` WHERE `formId`='".$formId."' ORDER BY `dateOfSubmission` DESC LIMIT ".$_POST["limit"][0].",".$_POST["limit"][1];
 $offset = $_POST["offset"];
 $num = 0;
 if(!$oldData) {
@@ -81,20 +81,22 @@ if(!$oldData) {
       $oldData = true;
     }
     while($row = $result->fetch_assoc()) {
-      
+      $displayData = array();
+      $notDisplayData = array();
+
       $submissionData = json_decode($row["data"], true);
       $submissionFiles = json_decode($row["files"], true);
-      $row["Ansp_Email"] = $submissionData[$elementsDic["Ansp_Email"]];
-      $row["Ansp_Name"] = $submissionData[$elementsDic["Ansp_Name"]];
-      $row["VAThema"] = array("title" => $submissionData[$elementsDic["VAThema"]], "file" => $submissionFiles[$elementsDic["XInfo"]]);    
-      $row["Inst"] = $submissionData[$elementsDic["Inst"]];
-      $row["DatumX"] = date("d.m.y", strtotime($row["dateOfSubmission"]));
+      $displayData["Ansp_Email"] = $submissionData[$elementsDic["Ansp_Email"]];
+      $displayData["Ansp_Name"] = $submissionData[$elementsDic["Ansp_Name"]];
+      $displayData["VAThema"] = array("title" => $submissionData[$elementsDic["VAThema"]], "file" => $submissionFiles[$elementsDic["XInfo"]]);    
+      $displayData["Inst"] = array_slice($instDict, $submissionData[$elementsDic["Inst"]], 1)[0];
+      $displayData["DatumX"] = date("d.m.y", strtotime($row["dateOfSubmission"]));
+      $notDisplayData["oldData"] = false;
+      $notDisplayData["id"] = $row["id"];
       
   
-      unset($row["dateOfSubmission"]);
-      unset($row["data"]);
-      unset($row["files"]);
-      array_push($data, $row);
+
+      array_push($data, array("displayData" => $displayData, "notDisplayData" => $notDisplayData));
     }
   }
 }
@@ -107,16 +109,21 @@ if(!$oldData) {
 if($oldData) {
   $amount = $_POST["limit"][1] - $num;
   $start = $_POST["limit"][0] - $offset + $num;
-  $query = "SELECT `UsNr`,`Ansp_Email`,`Ansp_Name`,date(`DatumX`),`VAThema`,`XInfo` FROM `".$dbName."`.`".$table."` ORDER BY `DatumX` DESC LIMIT ".$start.",".$amount;
+  $query = "SELECT `UsNr`, `UsNr_s`,`Ansp_Email`,`Ansp_Name`,date(`DatumX`),`VAThema`,`XInfo` FROM `".$dbName."`.`".$table."` ORDER BY `DatumX` DESC LIMIT ".$start.",".$amount;
   if($result = $connection->query($query)) {
     while($row = $result->fetch_assoc()) {
-      $row["Inst"] = $instDict[$row["UsNr"]];
-      $row["DatumX"] = date("d.m.y", strtotime($row["date(`DatumX`)"]));
-      $row["VAThema"] = array("title" => $row["VAThema"], "file" => $table."/".$row["XInfo"]);
-      unset($row["date(`DatumX`)"]);
-      unset($row["UsNr"]);
-      unset($row["XInfo"]);
-      array_push($data, $row);
+      $displayData = array();
+      $notDisplayData = array();
+      $displayData["Ansp_Email"] = $row["Ansp_Email"];
+      $displayData["Ansp_Name"] = $row["Ansp_Name"];
+      $displayData["VAThema"] = array("title" => $row["VAThema"], "file" => $table."/".$row["XInfo"]);
+      $displayData["Inst"] = $instDict[$row["UsNr"]];
+      $displayData["DatumX"] = date("d.m.y", strtotime($row["date(`DatumX`)"]));
+      $notDisplayData["oldData"] = true;
+      $notDisplayData["UsNr_s"] = $row["UsNr_s"];
+      $notDisplayData["UsNr"] = $row["UsNr"];
+
+      array_push($data, array("displayData" => $displayData, "notDisplayData" => $notDisplayData));
     }
   }
 }

@@ -54,7 +54,12 @@ export default {
             if(this.colNames[j].type == 'file') {
               temp['file'] = this.submissions[i]['files'][this.colNames[j].id]
             } else if(this.colNames[j].type == 'data'){
-              temp['file'] = this.submissions[i]['data'][this.colNames[j].id]
+              temp['data'] = this.submissions[i]['data'][this.colNames[j].id]
+            } else if(this.colNames[j].type == 'selection') {
+              var el = this.elements.filter(obj => {
+                return obj.elementId == this.colNames[j].id
+              })[0]
+              temp['data'] = el.data.options[this.submissions[i]['data'][this.colNames[j].id]]             
             }
           } else {
             temp['data'] = this.submissions[i][this.colNames[j].id]
@@ -66,7 +71,6 @@ export default {
       return data
     },
     gridStyle: function() {
-      console.log('data: ' ,this.data)
       return {gridTemplateColumns: `repeat(${this.colNames.length}, auto)`}
     },
     colNames: function() {
@@ -75,15 +79,16 @@ export default {
         const temp = {}
         if(this.elements[i].type == 'file') {
           temp['type'] = 'file'
-        } else {
+        } else if(this.elements[i].type == 'input'){
           temp['type'] = 'data'
+        } else if(this.elements[i].type == 'selection'){
+          temp['type'] = 'selection'
         }
         temp['id'] = this.elements[i].elementId
         temp['data'] = this.elements[i].data.labelName
         cols.push(temp)
       }
       cols.push({id: 'dateOfSubmission', data: 'Date'})
-      console.log(cols)
       return cols
     }
   },  
@@ -93,7 +98,6 @@ export default {
       url: 'https://www-3.mach.kit.edu/api/getFormSubmissions.php',
       data: {id: this.$route.params.id}
     }).then(response => {
-      console.log(response.data)
       if(response.data.success) {
         this.form = response.data.metadata;
         this.elements = response.data.elements;
