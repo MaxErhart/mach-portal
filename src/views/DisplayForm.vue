@@ -1,7 +1,7 @@
 <template>
   <form id="form" v-if="form.metadata!==null">
       <div id="form-header" >
-        {{form.metadata.name}}
+        {{form.metadata.formName}}
       </div>
       <div id="form-body">
         
@@ -65,6 +65,7 @@ export default {
         url: 'https://www-3.mach.kit.edu/api/getForm.php',
         data: {id: id}
       }).then((response) => {
+        console.log(response.data)
         if(response.data.success) {
           this.form = {metadata: null, elements: []}
           this.form.metadata = response.data.metadata
@@ -84,7 +85,7 @@ export default {
     },
     submitForm() {
       var formData = new FormData(document.getElementById("form"))
-      formData.append('formId', this.form.metadata.id)
+      formData.append('formId', this.form.metadata.formId)
       axios.post( 'https://www-3.mach.kit.edu/api/submitForm.php',
         formData,
         {

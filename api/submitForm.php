@@ -1,31 +1,29 @@
 <?php
+include_once("D:\inetpub\MPortal\includes\dbFramework\main.php");
+include_once("D:\inetpub\MPortal\includes\userFramework\main.php");
 session_start();
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-$serverName = "localhost";
-$dbName = "forms";
-$user = "mach-portal";
-$dbPassword = "motor25";
-$connection = new mysqli($serverName, $user, $dbPassword, $dbName);
+function main() {
+  $serverName = "localhost";
+  $dbName = "mach_portal";
+  $user = "mach-portal";
+  $dbPassword = "motor25";
+  $dbSchema = new dbSchema($serverName, $user, $dbPassword, $dbName);
 
-function main($connection) {
   $files = array();
   $defaultPath = "D:\inetpub\MPortal\dfiles\\";
-  $firstName = $_SESSION["givenName"][0];
-  $lastName = $_SESSION["sn"][0];
+  $userId = $_SESSION["user"]["userId"];
   $uniqId = uniqid();
-  print_r($_POST);
   foreach($_FILES as $id => $file) {
-    $filename = $firstName."_".$lastName."_".$id."_".$uniqId."_".$_FILES[$id]["name"];
-    $query = "SELECT (data) from `forms`.`elements` WHERE `elementId` = '".$id."'";
-    if($result = $connection->query($query)) {
-      while($row = $result->fetch_assoc()) {
-        $path = json_decode($row["data"], true)["path"];
-
-      }
-    }
+    $filename = $userId."_".$id."_".$uniqId."_".$_FILES[$id]["name"];
+    $conditions = array(
+      "elementId" => $id
+    );
+    $formElement = $dbSchema->selectTable("form_elements")->select()->conditions($conditions)->get(1)[0];
+    $path = json_decode($formElement["data"], true)["path"];
     $pathSegments = explode("/", $path);
     $winDir = "";
     foreach($pathSegments as $segment) {
@@ -56,12 +54,15 @@ function main($connection) {
       $data[$id] = $value;
     }  
   }
-  $query = "INSERT INTO `forms`.`submissions` (formId, firstName, lastName, data, files) VALUES ('".$_POST["formId"]."', '".$firstName."', '".$lastName."', '".json_encode($data, JSON_UNESCAPED_UNICODE)."', '".json_encode($files, JSON_UNESCAPED_UNICODE)."')";
-  if($result = $connection->query($query)) {
-    echo json_encode(array("error" => "null"));
-  }
+  $insertAttributes = array(
+    "formId" => $_POST["formId"],
+    "userId" => $userId,
+    "data" => json_encode($data, JSON_UNESCAPED_UNICODE),
+    "files" => json_encode($files, JSON_UNESCAPED_UNICODE)
+  );
+  $dbSchema->selectTable("form_submissions")->insert($insertAttributes)->commit();
 }
 
-main($connection);
+main();
 
 ?>

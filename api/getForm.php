@@ -1,33 +1,28 @@
 <?php
+include_once("D:\inetpub\MPortal\includes\dbFramework\main.php");
+include_once("D:\inetpub\MPortal\includes\userFramework\main.php");
 session_start();
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-$serverName = "localhost";
-$dbName = "forms";
-$user = "mach-portal";
-$dbPassword = "motor25";
-$connection = new mysqli($serverName, $user, $dbPassword, $dbName);
 
-$_POST = json_decode(file_get_contents("php://input"), true);
-$id = $_POST['id'];
+function main() {
+  $serverName = "localhost";
+  $dbName = "mach_portal";
+  $user = "mach-portal";
+  $dbPassword = "motor25";
+  $dbSchema = new dbSchema($serverName, $user, $dbPassword, $dbName);
+  
+  $_POST = json_decode(file_get_contents("php://input"), true);
+  $formId = $_POST['id'];
 
-function main($connection, $id) {
-  $form = [];
-  $formQuery = "SELECT `id`, `name` FROM `forms` WHERE `id`='".$id."'";
-  $elementsQuery = "SELECT `type`, `data`, `position`, `elementId` FROM `elements` WHERE `formId`='".$id."'";
-  if($result = $connection->query($formQuery)){
-    while($row = $result->fetch_assoc()) {
-      $form["metadata"] = $row;
-    }
-  }
-  if($result = $connection->query($elementsQuery)){
-    $form["elements"] = [];
-    while($row = $result->fetch_assoc()) {
-      array_push($form["elements"], $row);
-    }
-  }    
+  $conditions = array(
+    "formId" => $formId,
+  );
+  $form = array();
+  $form["metadata"] = $dbSchema->selectTable("forms")->select()->conditions($conditions)->get(1)[0];
+  $form["elements"] = $dbSchema->selectTable("form_elements")->select()->conditions($conditions)->getAll(); 
   return $form;
 }
 
@@ -36,6 +31,6 @@ function main($connection, $id) {
 // } else if($id == NULL) {
   // echo json_encode(array("error" => "invalid form id"));
 // } else {
-  echo json_encode(array_merge(array("success" => true), main($connection, $id)));
+  echo json_encode(array_merge(array("success" => true), main()));
 // }
 ?>

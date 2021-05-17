@@ -6,6 +6,7 @@ import DisplayForm from '../views/DisplayForm.vue'
 import AllForms from '../views/AllForms.vue'
 import Submission from '../views/Submission.vue'
 import Theses from '../views/Theses.vue'
+import Rights from '../views/Rights.vue'
 
 const routes = [
   {
@@ -54,7 +55,13 @@ const routes = [
         component: DisplayForm
       }
     ]
+  },
+  {
+    path: '/rights',
+    name: Rights,
+    component: Rights
   }
+
 ]
 
 const router = createRouter({

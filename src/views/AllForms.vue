@@ -9,7 +9,7 @@
       </section>
       <section id="tab-contents">
         <div id="all-forms" class="content" v-if="activeTab =='AllForms'">
-          <div class="form-item" v-for="form in forms" :key="form" @click="redirect(form.id)">{{form.name}}</div>
+          <div class="form-item" v-for="form in forms" :key="form" @click="redirect(form.formId)">{{form.formName}}</div>
         </div>
         <div id="my-forms" class="content" v-if="activeTab =='MyForms'">
           My Forms

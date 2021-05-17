@@ -1,12 +1,12 @@
 <template>
   <div id="login">
-    <div id="login-overlay" v-if="loginFormActive && !signedIn" @click.self="changeLoginFormActive(false)">
+    <div id="login-overlay" v-if="loginFormActive && !isSignedIn" @click.self="changeLoginFormActive(false)">
       <div id="login-body">
         <section id="tabs">
-          <button class="tab active" @click="sitchTab('shib')" ref="shib">
+          <button class="tab" @click="sitchTab('shib')" :class="{active: activeTab=='shib'}">
             Sign In with KIT Account
           </button>
-          <button class="tab" @click="sitchTab('guest')" ref="guest">
+          <button class="tab" @click="sitchTab('guest')" :class="{active: activeTab=='guest'}">
             Sign In as Guest
           </button>
         </section>
@@ -42,20 +42,21 @@
 import axios from "axios";
 export default {
   name: 'Login',
+  props: {
+    isSignedIn: Boolean,
+  },
   data() {
     return {
       username: null,
       password: null,
-      activeTab: 'shib'
+      activeTab: 'shib',
     }
   },
+
   computed: {
     loginFormActive: function() {
       return this.$store.getters.getLoginForm;
     },
-    signedIn: function() {
-      return this.$store.getters.getIsSignedIn;
-    },    
   },
   methods: {
     changeLoginFormActive(isActive){
@@ -78,12 +79,6 @@ export default {
       window.location.href = "https://www-3.mach.kit.edu/Shibboleth.sso/Login?target=https://www-3.mach.kit.edu/dist/#";
     },
     sitchTab(tabClicked) {
-      for(var tab in this.$refs) {
-        if(tab == 'shib' || tab == 'guest') {
-          this.$refs[tab].classList.remove('active')
-        }
-      }
-      this.$refs[tabClicked].classList.add('active')
       this.activeTab = tabClicked
     },        
   }

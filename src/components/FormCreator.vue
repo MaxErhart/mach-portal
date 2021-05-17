@@ -30,7 +30,7 @@
         <div class="form-item-selection" v-on:click="addSelection('selection')">Selection</div>
       </div>      
     </div>
-    <button class="kit-button" id="save-form-button" v-on:click="saveForm()">Safe Form</button>
+    <button class="kit-button" id="save-form-button" v-on:click="saveForm()">Save Form</button>
   </div>
 </template>
 
@@ -173,7 +173,9 @@ export default {
 				method: 'post',
 				url: 'https://www-3.mach.kit.edu/api/saveForm.php',
 				data: {formName: this.formName, elements: this.$store.getters.getSelectionsData},
-			})   
+			}).then(response => {
+        console.log(response.data)
+      })
     },
   }
 

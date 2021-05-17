@@ -1,16 +1,19 @@
 <?php
+include_once("D:\inetpub\MPortal\includes\dbFramework\main.php");
+include_once("D:\inetpub\MPortal\includes\userFramework\main.php");
 session_start();
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-$serverName = "localhost";
-$dbName = "forms";
-$user = "mach-portal";
-$dbPassword = "motor25";
-$connection = new mysqli($serverName, $user, $dbPassword, $dbName);
 
-function main($connection) {
+
+function main() {
+  $serverName = "localhost";
+  $dbName = "mach_portal";
+  $user = "mach-portal";
+  $dbPassword = "motor25";
+  $dbSchema = new dbSchema($serverName, $user, $dbPassword, $dbName);  
   $_POST = json_decode(file_get_contents("php://input"), true);
   $elements = $_POST['elements'];
   $formName = $_POST['formName'];
@@ -19,19 +22,11 @@ function main($connection) {
   } else if($formName == NULL) {
     echo json_encode(array("error" => "no form name"));
   } else {
-
-    $query = "INSERT INTO `forms`.`forms` (name) VALUES ('".$formName."')";
-    if($result = $connection->query($query)) {
-      echo json_encode(array("error" => NULL));
-    } else { 
-      echo json_encode(array("error" => $connection->error));
-    }
-    
-    if($result = $connection->query("SELECT LAST_INSERT_ID()")) {
-      while($row = $result->fetch_assoc()){
-        $formForeignKey = $row["LAST_INSERT_ID()"];
-      }
-    }
+    $insertAttributes = array(
+      "formName" => $formName,
+      "userId" => $_SESSION["user"]["userId"]
+    );
+    $formId = $dbSchema->selectTable("forms")->insert($insertAttributes)->commit();
     $index = 0;
     foreach($elements as $element) {
       if($element["type"] == "file") {
@@ -41,12 +36,14 @@ function main($connection) {
           $element["data"]["path"] .= $segment."/";
         }
       }
-      $query = "INSERT INTO `forms`.`elements` (type, data, formId, position, elementId) VALUES ('".$element['type']."', '".json_encode($element['data'], JSON_UNESCAPED_UNICODE)."', (".$formForeignKey."), '".$index."', '".$element['id']."')";
-      if($result = $connection->query($query)) {
-        echo json_encode(array("error" => NULL));
-      } else { 
-        echo json_encode(array("error" => $connection->error));
-      }
+      $insertAttributes = array(
+        "formId" => $formId,
+        "type" => $element["type"],
+        "position" => $index,
+        "elementId" => $element["id"],
+        "data" => json_encode($element["data"], JSON_UNESCAPED_UNICODE)
+      );
+      $dbSchema->selectTable("form_elements")->insert($insertAttributes)->commit();
       $index++;
     }
 
@@ -56,6 +53,6 @@ function main($connection) {
 
 }
 
-main($connection);
+main();
 
 ?>

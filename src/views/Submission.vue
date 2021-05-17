@@ -1,9 +1,9 @@
 <template>
   <div id="submissions">
     <h1>Form Submissions</h1>
-    <div id="form-submissions" v-if="form != null">
+    <div id="form-submissions" v-if="formName != null">
       <div id="form-submissions-header">
-        Submissions for form: <span>{{form.name}}</span>
+        Submissions for form: <span>{{formName}}</span>
       </div>
       <div id="form-submissions-body" :style="gridStyle">
         <div id="col-names" v-for="col in colNames" :key="col">
@@ -15,7 +15,7 @@
         <div class="row" v-for="row in data" :key="row">
           <div class="row-item" v-for="item in row" :key="item">
             <template v-for="(value, key) in item" :key="value">
-              <a v-if="key == 'file'" :href="fileBaseUrl.concat(value)">{{value.split("/").pop().split("_").slice(4).join("_")}}</a>
+              <a v-if="key == 'file'" :href="fileBaseUrl.concat(value)">{{value.split("/").pop().split("_").pop()}}</a>
               <template v-if="key == 'data'">{{value}}</template>
             </template>
           </div>
@@ -23,7 +23,9 @@
 
       </div>
     </div>
-    
+    <div v-else-if="error==404">
+      no submissions found
+    </div>
   </div>
 </template>
 
@@ -35,9 +37,10 @@ export default {
   },
   data() {
     return {
-      form: null,
+      formName: null,
       elements: null,
       submissions: null,
+      error: null,
     }
   },
   computed: {
@@ -74,7 +77,7 @@ export default {
       return {gridTemplateColumns: `repeat(${this.colNames.length}, auto)`}
     },
     colNames: function() {
-      var cols = [{id: 'id', data: 'id'}, {id: 'firstName', data: 'First Name'}, {id: 'lastName', data: 'Last Name'}]
+      var cols = [{id: 'formSubmissionId', data: 'id'}, {id: 'firstname', data: 'First Name'}, {id: 'lastname', data: 'Last Name'}]
       for(let i=0; i<this.elements.length; i++) {
         const temp = {}
         if(this.elements[i].type == 'file') {
@@ -97,11 +100,16 @@ export default {
       method: 'post',
       url: 'https://www-3.mach.kit.edu/api/getFormSubmissions.php',
       data: {id: this.$route.params.id}
-    }).then(response => {
+    }).then(response => {   
+      console.log(response.data) 
       if(response.data.success) {
-        this.form = response.data.metadata;
+
+        this.formName = response.data.formName;
         this.elements = response.data.elements;
         this.submissions = response.data.submissions;
+        console.log(this.data)
+      } else if(response.data.errorCode == 404) {
+        this.error=404
       } else {
         this.$router.push({name: 'Home'})
       }

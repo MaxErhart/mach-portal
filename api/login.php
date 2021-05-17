@@ -3,6 +3,10 @@ session_start();
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+
+include_once("D:\inetpub\MPortal\includes\dbFramework\main.php");
+include_once("D:\inetpub\MPortal\includes\userFramework\main.php");
+
 $serverName = "localhost";
 $dbName = "user";
 $user = "mach-portal";
@@ -25,11 +29,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['isLoggedIn'])) {
   if($result = $connection->query($query)){
     while($row = $result->fetch_assoc()){
       if ($username !== false && md5($password) === $row["KWMD5"]) {
-        $_SESSION['username'] = $row['Us'];
-        $_SESSION['isAdmin'] = ($row['Admin'] == 'J');
         $_SESSION['isLoggedIn'] = true;
-        $_SESSION['lastname'] = $row['LName'];
-        $_SESSION['firstname'] = $row['VName'];
+        $_SESSION['sn'] = $row['LName'];
+        $_SESSION['givenName'] = $row['VName'];
+        $_SESSION['mail'] = $row['Email'];
+        $_SESSION['affiliation'] = array();
+        $_SESSION['groups'] = array();
         echo json_encode(array('success' => true,'error' => NULL, 'info' => $_SESSION, 'server' => $_SERVER));
       } else {
         echo json_encode(array('error' => "login failed"));
@@ -48,6 +53,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['isLoggedIn'])) {
       $headerString .="; ".$key."=".$value;
     } 
   }
+  // echo $headerString;
+  // $headerString = "PHPSESSID=umu6majgk2sju8hc9u73v2orkg; _shibsession_64656661756c7468747470733a2f2f7777772d332e6d6163682e6b69742e6564752f7370=_9bc28bc49fcbd35ea3331d623c13fcce";
   $curl = curl_init();
   curl_setopt($curl, CURLOPT_URL, "https://www-3.mach.kit.edu/Shibboleth.sso/Session");
   curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
@@ -59,9 +66,15 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['isLoggedIn'])) {
   $output = curl_exec($curl);
   curl_close($curl);
   if($output == "{}\n") {
-    echo json_encode(array('error' => "not logged in"));
-    session_destroy();
-  } else if(!isset($_SESSION['isLoggedIn'])){
+    $userTable = new dbTable("localhost", "mach-portal", "motor25", "mach_users", "users");
+    $webuser = $userTable->select()->conditions(array("userId" => "4"))->get(1)[0];
+
+
+    $userObject = new user("webuser");
+    $_SESSION["user"] = $userObject->userInformation();
+    echo json_encode(array('error' => "not logged in", "user" => $userObject->userInformation()));
+    
+  } else if(!isset($_SESSION['isLoggedIn']) || !$_SESSION['isLoggedIn']){
     $_SESSION['isLoggedIn'] = true;
     $attributes = json_decode($output, true)["attributes"];
     foreach($attributes as $attribute) {
@@ -76,9 +89,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['isLoggedIn'])) {
       }
       $_SESSION[$valName] = $valuesList;
     }
-    echo json_encode(array('success' => true,'error' => NULL, 'info' => $_SESSION, 'shib' => json_decode($output)));
+    $userObject = new user($_SESSION);
+    $_SESSION["user"] = $userObject->userInformation();
+    echo json_encode(array('error' => NULL, 'user' => $_SESSION["user"]));
   } else {
-    echo json_encode(array('success' => true,'error' => NULL, 'info' => $_SESSION, 'shib' => json_decode($output)));
+    $userObject = new user($_SESSION);
+    $_SESSION["user"] = $userObject->userInformation();
+    echo json_encode(array('error' => NULL, 'user' => $_SESSION["user"]));
   }
 }
 ?>

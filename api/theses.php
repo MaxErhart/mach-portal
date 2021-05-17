@@ -1,14 +1,17 @@
 <?php
+include_once("D:\inetpub\MPortal\includes\dbFramework\main.php");
+include_once("D:\inetpub\MPortal\includes\userFramework\main.php");
 session_start();
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 $serverName = "localhost";
-$dbName = "user";
+$dbName = "mach_portal";
 $user = "mach-portal";
 $dbPassword = "motor25";
-$connection = new mysqli($serverName, $user, $dbPassword, $dbName);
+$connection = new mysqli($serverName, $user, $dbPassword, "user");
+$dbSchema = new dbSchema($serverName, $user, $dbPassword, $dbName);
 $_POST = json_decode(file_get_contents("php://input"), true);
 $instDict = array(
   "1000" => "Fahrzeugsystemtechnik / Mobile Arbeitsmaschinen",
@@ -70,35 +73,95 @@ if(isset($_POST["thesis"])) {
 
 $data = [];
 $oldData = $_POST["getOldData"];
-$queryNewTheses = "SELECT `id`,`dateOfSubmission`,`data`,`files` FROM `forms`.`submissions` WHERE `formId`='".$formId."' ORDER BY `dateOfSubmission` DESC LIMIT ".$_POST["limit"][0].",".$_POST["limit"][1];
 $offset = $_POST["offset"];
 $num = 0;
-if(!$oldData) {
-  if($result = $connection->query($queryNewTheses)) {
-    if($result->num_rows < $_POST["limit"][1]-$_POST["limit"][0]) {
-      $offset = $result->num_rows;
-      $num = $offset;
-      $oldData = true;
-    }
-    while($row = $result->fetch_assoc()) {
-      $displayData = array();
-      $notDisplayData = array();
 
-      $submissionData = json_decode($row["data"], true);
-      $submissionFiles = json_decode($row["files"], true);
-      $displayData["Ansp_Email"] = $submissionData[$elementsDic["Ansp_Email"]];
-      $displayData["Ansp_Name"] = $submissionData[$elementsDic["Ansp_Name"]];
-      $displayData["VAThema"] = array("title" => $submissionData[$elementsDic["VAThema"]], "file" => $submissionFiles[$elementsDic["XInfo"]]);    
-      $displayData["Inst"] = array_slice($instDict, $submissionData[$elementsDic["Inst"]], 1)[0];
-      $displayData["DatumX"] = date("d.m.y", strtotime($row["dateOfSubmission"]));
-      $notDisplayData["oldData"] = false;
-      $notDisplayData["id"] = $row["id"];
-      
-  
-
-      array_push($data, array("displayData" => $displayData, "notDisplayData" => $notDisplayData));
-    }
+// check if read/write ids for theses have already been fetched if not save fetched ids in session
+if($_SESSION["user"]["rights"]["theses"]) {
+  if(!array_key_exists("ids", $_SESSION["user"]["rights"]["theses"])){
+    $ids = $dbSchema->getUserIds($_SESSION["user"]["rights"]["theses"]);
+    $_SESSION["user"]["rights"]["theses"]["ids"]=$ids;
+  } else {
+    $ids = $_SESSION["user"]["rights"]["theses"]["ids"];
   }
+}
+
+
+
+if(!$oldData) {
+
+  if($ids["read"] == "all") {
+
+    $conditions = array(
+      "formId" => $formId
+    );
+    $colTypePairs = array(
+      "data" => "JSON",
+      "files" => "JSON",
+      "dateOfSubmission" => "date"
+    );
+    $theses = $dbSchema->selectTable("form_submissions")->select("formSubmissionId", "userId", "dateOfSubmission", "data", "files")->conditions($conditions)->orderBy("dateOfSubmission", "DESC")->get($_POST["limit"][1], $_POST["limit"][0], $colTypePairs);
+
+    if(count($theses) < $_POST["limit"][1]-$_POST["limit"][0]) {
+      $offset = count($theses);
+      $num = $offset;
+      $oldData = true;    
+    }
+    for($i=0;$i<count($theses); $i++) {
+      $displayData["Ansp_Email"] = $theses[$i]["data"][$elementsDic["Ansp_Email"]];
+      $displayData["Ansp_Name"] = $theses[$i]["data"][$elementsDic["Ansp_Name"]];
+      $displayData["VAThema"] = array("title" => $theses[$i]["data"][$elementsDic["VAThema"]], "file" => $theses[$i]["files"][$elementsDic["XInfo"]]);    
+      $displayData["Inst"] = array_slice($instDict, $theses[$i]["data"][$elementsDic["Inst"]], 1)[0];
+      $displayData["DatumX"] = $theses[$i]["dateOfSubmission"];
+      $notDisplayData["oldData"] = false;
+      $notDisplayData["id"] = $theses[$i]["formSubmissionId"];
+      if($ids["write"] == "all") {
+       $notDisplayData["write"] = true;
+      } else if(in_array($theses[$i]["userId"], $ids["write"])) {
+        $notDisplayData["write"] = true;
+      } else {
+        $notDisplayData["write"] = false;
+      }
+      array_push($data, array("displayData" => $displayData, "notDisplayData" => $notDisplayData));
+    }    
+  } else {
+    $conditions = array(
+      "formId" => $formId,
+      "userId" => $ids["read"]
+    );
+    $colTypePairs = array(
+      "data" => "JSON",
+      "files" => "JSON",
+      "dateOfSubmission" => "date"
+    );    
+    $theses = $dbSchema->selectTable("form_submissions")->select("formSubmissionId", "userId", "dateOfSubmission", "data", "files")->conditions($conditions)->orderBy("dateOfSubmission", "DESC")->get($_POST["limit"][1], $_POST["limit"][0], $colTypePairs);
+    if(count($theses) < $_POST["limit"][1]-$_POST["limit"][0]) {
+      $offset = count($theses);
+      $num = $offset;
+      $oldData = true;    
+    }
+    for($i=0;$i<count($theses); $i++) {
+      $displayData["Ansp_Email"] = $theses[$i]["data"][$elementsDic["Ansp_Email"]];
+      $displayData["Ansp_Name"] = $theses[$i]["data"][$elementsDic["Ansp_Name"]];
+      $displayData["VAThema"] = array("title" => $theses[$i]["data"][$elementsDic["VAThema"]], "file" => $theses[$i]["files"][$elementsDic["XInfo"]]);    
+      $displayData["Inst"] = array_slice($instDict, $theses[$i]["data"][$elementsDic["Inst"]], 1)[0];
+      $displayData["DatumX"] = $theses[$i]["dateOfSubmission"];
+      $notDisplayData["oldData"] = false;
+      $notDisplayData["id"] = $theses[$i]["formSubmissionId"];
+      if(in_array($theses[$i]["userId"], $ids["write"])) {
+        $notDisplayData["write"] = true;
+      } else {
+        $notDisplayData["write"] = false;
+      }
+      array_push($data, array("displayData" => $displayData, "notDisplayData" => $notDisplayData));
+    } 
+
+    
+  }
+
+
+
+
 }
 
 
@@ -109,7 +172,8 @@ if(!$oldData) {
 if($oldData) {
   $amount = $_POST["limit"][1] - $num;
   $start = $_POST["limit"][0] - $offset + $num;
-  $query = "SELECT `UsNr`, `UsNr_s`,`Ansp_Email`,`Ansp_Name`,date(`DatumX`),`VAThema`,`XInfo` FROM `".$dbName."`.`".$table."` ORDER BY `DatumX` DESC LIMIT ".$start.",".$amount;
+
+  $query = "SELECT `UsNr`, `UsNr_s`,`Ansp_Email`,`Ansp_Name`,date(`DatumX`),`VAThema`,`XInfo` FROM `user`.`".$table."` ORDER BY `DatumX` DESC LIMIT ".$start.",".$amount;
   if($result = $connection->query($query)) {
     while($row = $result->fetch_assoc()) {
       $displayData = array();
@@ -122,6 +186,11 @@ if($oldData) {
       $notDisplayData["oldData"] = true;
       $notDisplayData["UsNr_s"] = $row["UsNr_s"];
       $notDisplayData["UsNr"] = $row["UsNr"];
+      if($ids["write"] == "all") {
+        $notDisplayData["write"] = true;
+      } else {
+        $notDisplayData["write"] = false;
+      }
 
       array_push($data, array("displayData" => $displayData, "notDisplayData" => $notDisplayData));
     }

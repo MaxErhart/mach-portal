@@ -1,66 +1,56 @@
 <?php
+include_once("D:\inetpub\MPortal\includes\dbFramework\main.php");
+include_once("D:\inetpub\MPortal\includes\userFramework\main.php");
 session_start();
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-$serverName = "localhost";
-$dbName = "forms";
-$user = "mach-portal";
-$dbPassword = "motor25";
-$connection = new mysqli($serverName, $user, $dbPassword, $dbName);
 
-$_POST = json_decode(file_get_contents("php://input"), true);
-$id = $_POST['id'];
 
-function main($connection, $id) {
-  $submissions = [];
-  $formQuery = "SELECT `id`, `name` FROM `forms` WHERE `id`='".$id."'";
-  $submissionsQuery = "SELECT * FROM `submissions` WHERE `formId`='".$id."'";
-  if($result = $connection->query($formQuery)){
-    while($row = $result->fetch_assoc()) {      
-      $submissions["metadata"] = $row;
-    }
-  }
-  if($result = $connection->query($submissionsQuery)){
-    $submissions["submissions"] = [];
-    while($row = $result->fetch_assoc()) {
-      $row["data"] = json_decode($row["data"]);
-      $row["files"] = json_decode($row["files"]);
-      $dateTime = new DateTime($row["dateOfSubmission"]);
-      $dateTime = $dateTime->format('d.m.Y');
-      $row["dateOfSubmission"] = $dateTime;      
-      array_push($submissions["submissions"], $row);
-    }
-  }
+function main() {
+  $serverName = "localhost";
+  $dbName = "mach_portal";
+  $user = "mach-portal";
+  $dbPassword = "motor25";
+  $dbSchema = new dbSchema($serverName, $user, $dbPassword, $dbName);
   
-  $elementsQuery = "SELECT `type`, `data`, `position`, `elementId` FROM `elements` WHERE";
-  $first = true;
-  foreach($submissions["submissions"][0]["data"] as $elementId => $value) {
-    if($first) {
-      $elementsQuery .= " `elementId`='".$elementId."'";
-      $first = false;
-    } else {
-      $elementsQuery .= " OR `elementId`='".$elementId."'";
-    }
-  }
-  foreach($submissions["submissions"][0]["files"] as $elementId => $value) {
-    if($first) {
-      $elementsQuery .= " `elementId`='".$elementId."'";
-      $first = false;
-    } else {
-      $elementsQuery .= " OR `elementId`='".$elementId."'";
-    }
-  }
-  if($result = $connection->query($elementsQuery)){
-    $submissions["elements"] = [];
-    while($row = $result->fetch_assoc()) {
-      $row["data"] = json_decode($row["data"]);
-      array_push($submissions["elements"], $row);
-    }
-  }
+  $_POST = json_decode(file_get_contents("php://input"), true);
+  $formId = $_POST['id'];
+  
 
-  return $submissions;
+  $formData = array();
+  $conditions = array(
+    "formId" => $formId
+  );
+
+  $colTypePairs = array(
+    "data" => "JSON",
+    "files" => "JSON",
+    "dateOfSubmission" => "date",
+    "formName" => "once"
+  );
+  
+  $formData = $dbSchema->selectTable("form_submissions")->innerJoin("userId", "users", "userId", array("firstname", "lastname", "mail"))->innerJoin("formId", "forms", "formId", array("formName"))->select("formSubmissionId", "data", "dateOfSubmission", "files")->conditions($conditions)->getAll($colTypePairs);
+  if(empty($formData)) {
+    return NULL;
+  }
+  $formData["formName"] = $formData[0];
+  unset($formData[0]);
+  $formData["submissions"] = $formData[1];
+  unset($formData[1]);
+  
+
+
+  $conditions = array(
+    "elementId" => array_merge(array_keys($formData["submissions"][0]["data"]), array_keys($formData["submissions"][0]["files"]))
+  );
+  $colTypePairs = array(
+    "data" => "JSON"
+  );
+  $formData["elements"] = $dbSchema->selectTable("form_elements")->select("type", "data", "position", "elementId")->orConditions($conditions)->getAll($colTypePairs);
+  // print_r($formData);
+  return $formData;
 }
 
 // if(!isset($_SESSION['isLoggedIn'])) {
@@ -68,6 +58,12 @@ function main($connection, $id) {
 // } else if($id == NULL) {
 //   echo json_encode(array("error" => "invalid form id"));
 // } else {
-  echo json_encode(array_merge(array("success" => true), main($connection, $id)));
+  $submissionData = main();
+  if($submissionData==NULL) {
+    echo json_encode(array_merge(array("errorCode" => 404)));
+  } else {
+    echo json_encode(array_merge(array("success" => true), $submissionData));
+  }
+  
 // }
 ?>

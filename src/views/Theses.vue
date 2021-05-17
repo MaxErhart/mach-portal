@@ -7,7 +7,6 @@
           <div id="tab-indicator" :style="tabIndicatorPosition"></div>
           <div class="tab" :class="{active: activeTab==0}" @click="changeTab(0)">Bachelor Theses</div>
           <div class="tab" :class="{active: activeTab==1}" @click="changeTab(1)">Master Theses</div>
-
         </div>        
       </div>
       <div id="new-thesis" v-if="addThesisRights">
@@ -28,11 +27,11 @@
             <a v-else-if="name=='Ansp_Email'" :href="`mailto:${item}`">{{item}}</a>
             <template v-else>
               {{item}}
-              <div class="row-options" v-if="name=='DatumX' && rowModRights">
+              <div class="row-options" v-if="name=='DatumX' && row.notDisplayData.write">
                 <!-- <div class="option">
                   <img :src="require(`@/assets/edit.svg`)">
                 </div> -->
-                <div class="option" @click="deleteThesis(row.notDisplayData)">
+                <div class="option" @click="deleteThesis(row.notDisplayData, index)">
                   <img :src="require(`@/assets/delete.svg`)">
                 </div>
               </div>
@@ -66,11 +65,13 @@ export default {
       infiniteScrollLoading: false,
       oldNewDataOffset: 0,
       getOldData: false,
+      user: null,
     }
   },  
   mounted() {
     this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[2])
     this.changeTab(0);
+    this.user = JSON.parse(localStorage.user)
     document.addEventListener("scroll", ($event) => this.infiniteScroll($event));
   },
   computed: {
@@ -79,14 +80,16 @@ export default {
       return {transform: `translate(${xPos}px, 34px)`}
     },
     addThesisRights: function() {
-      if(localStorage.isLoggedIn){
-        const attributes = JSON.parse(localStorage.userInformation)
-        if(attributes.memberOf) {
-          if(attributes.memberOf.includes('MACH-Portal-Admin')) {
+      if(this.user){
+        if(this.user.rights.theses) {
+          if(this.user.rights.theses.write.groups.length > 0 || this.user.rights.theses.write.users.length > 0) {
             return true
+          } else {
+            return false
           }
+        } else {
+          return false
         }
-        return false
       } else {
         return false
       }
@@ -162,7 +165,8 @@ export default {
       }
       this.open = !this.open
     },
-    deleteThesis(thesisData) {
+    deleteThesis(thesisData, index) {
+      this.data.splice(index, 1)
       axios({
         method: 'post',
         url: 'https://www-3.mach.kit.edu/api/editTheses.php',

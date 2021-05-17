@@ -1,31 +1,34 @@
 <template>
   <div id="main" :style="{'grid-template-columns': windowWidth>750 ? '200px auto' : '64px auto'}">
     <div id="main-nav" :style="{'padding': styles.mainNavPadding, 'width': (windowWidth>750 ? 200 : 64) + 'px'}">
-      <div id="active-indicator" v-if="windowWidth>750" :style="{top: (currentRoute.index + 0.5)*navItemHeight - 3  + 'px', padding: styles.mainNavPadding}">
+      <div id="active-indicator" v-if="windowWidth>750" :style="{top: (currentActiveRouteIndex + 0.5)*navItemHeight - 3  + 'px', padding: styles.mainNavPadding}">
         <svg>
           <circle cx="3" cy="3" r="3" stroke="black" stroke-width="0" />
         </svg> 
       </div>
-      <MainNavItem @click="changePage(route)" :showText="windowWidth>750" v-for="route in routes" :route="route.route" :key="route" :text="route.name" :isActive="currentRoute.index == route.index" :path="route.icon"/>
-      <div class="main-nav-login" v-if="!signedIn" @click="changeLoginFormActive(true)" :style="{'width': windowWidth>750 ? '75%': '64px'}">
+      <MainNavItem @click="changePage(route, index)" :showText="windowWidth>750" v-for="(route, index) in routes" :route="route.route" :key="route" :text="route.name" :isActive="currentActiveRouteIndex == index" :path="route.icon"/>
+      <div class="main-nav-login" v-if="!isSignedIn" @click="changeLoginFormActive(true)" :style="{'width': windowWidth>750 ? '75%': '64px'}">
         <img src="@/assets/signIn.svg" alt="Sign In">
         <span class="button-span" v-if="windowWidth>750">Sign In</span>        
       </div>
-      <div class="main-nav-login" v-if="signedIn" @click="logout()" :style="{'width': windowWidth>750 ? '75%': '64px'}">
-        <img src="@/assets/signOut.svg" alt="Sign Out">
-        <span class="button-span" v-if="windowWidth>750">Sign Out</span>
-      </div>
-      <div id="main-nav-user" v-if="signedIn && userInformation!=null">
-        <div id="user-icon">
-          <img src="@/assets/user.svg">
+      <template v-if="isSignedIn">
+        <div class="main-nav-login" @click="logout()" :style="{'width': windowWidth>750 ? '75%': '64px'}">
+          <img src="@/assets/signOut.svg" alt="Sign Out">
+          <span class="button-span" v-if="windowWidth>750">Sign Out</span>
+        </div>        
+        <div id="main-nav-user" >
+          <div id="user-icon">
+            <img src="@/assets/user.svg">
+          </div>
+          <div id="user-name" v-if="windowWidth>750">{{user.fname}} {{user.lname}}</div>
         </div>
-        <div id="user-name" v-if="windowWidth>750">{{userInformation.givenName}} {{userInformation.sn}}</div>
-      </div>
+      </template>
+
     </div>
     <div id="main-body">
       <router-view/>
     </div>
-    <Login/>
+    <Login :isSignedIn="isSignedIn"/>
   </div>
 </template>
 
@@ -47,31 +50,14 @@ export default {
       windowWidth: window.innerWidth,
       username: '',
       password: '',
+      currentActiveRouteIndex: 0,
+      isSignedIn: false,
+      user: null,
+      webuserTopics: ["home", "about", "theses"],
     }
   },
-  beforeCreate() {
-    axios({
-      method: 'get',
-      url: 'https://www-3.mach.kit.edu/api/login.php'
-    }).then(response => {
-      if(response.data.success) {
-        localStorage.isLoggedIn = true;
-        var userInformation = {}
-        response.data.shib.attributes.forEach(el => {
-          if(el.values.length == 1) {
-            userInformation[el.name] = el.values[0]
-          } else {
-            userInformation[el.name] = el.values
-          }
-        })
-        this.$store.commit('login', userInformation);
-        localStorage.userInformation = JSON.stringify(userInformation)
-      } else {
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userInformation');
-        this.$store.commit('logout');
-      }
-    })
+  created() {
+    this.setup()
   },
   mounted() {
     window.addEventListener('resize', this.onResize);
@@ -83,14 +69,14 @@ export default {
     currentRoute() {
       return this.$store.getters.getCurrentRoute;
     },
-    signedIn() {
-      return this.$store.getters.getIsSignedIn;
-    },
+
     routes() {
-      if(this.signedIn){
-         return this.$store.getters.getRoutes;
+      if(this.user) {
+        return this.$store.getters.getRoutes.filter(i => i.topic in this.user.rights);
+      } else {
+        return this.$store.getters.getRoutes.filter(i => this.webuserTopics.includes(i.topic));
       }
-      return this.$store.getters.getRoutes.filter(i => i.signedIn == false);
+      
     },
     navItemHeight() {
       return this.$store.getters.getNavItemMainHeight;
@@ -103,16 +89,36 @@ export default {
     }
   },
   methods: {
+    setup() {
+      axios({
+        method: 'get',
+        url: 'https://www-3.mach.kit.edu/api/login.php'
+      }).then(response => {
+        console.log(response.data)
+        if(response.data.error==null) {
+          localStorage.isSignedIn = true
+          this.isSignedIn = true
+          this.user = response.data.user
+          localStorage.user = JSON.stringify(response.data.user)
+        } else {
+          localStorage.isSignedIn = false
+          this.isSignedIn = false
+          this.user = response.data.user
+          localStorage.user = JSON.stringify(response.data.user)
+        }
+      })
+     
+    },
     onResize(){
       this.windowWidth = window.innerWidth;
     },
-    changePage(route) {
+    changePage(route, index) {
+      this.currentActiveRouteIndex = index
       this.$store.commit('setCurrentRoute', route);
     },
     logout(){
-      this.$store.commit('logout');
       this.$router.push({name: 'Home'})
-      localStorage.removeItem('isLoggedIn');      
+      localStorage.isSignedIn = false    
 			axios({
 				method: 'post',
 				url: 'https://www-3.mach.kit.edu/api/logout.php',
