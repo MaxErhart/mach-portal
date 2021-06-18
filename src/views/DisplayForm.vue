@@ -1,64 +1,103 @@
 <template>
-  <form id="form" v-if="form.metadata!==null">
-      <div id="form-header" >
-        {{form.metadata.formName}}
+  <div class="form-overview">
+    <div class="form-overview-header">
+      <div id="tabs">
+        <div id="tab-indicator" :style="tabIndicatorPosition"></div>
+        <div class="tab" :class="{active: activeTab==0}" @click="changeTab(0)">Submit Form</div>
+        <div class="tab" :class="{active: activeTab==1}" @click="changeTab(1)">Form Submissions</div>
+        <div class="tab" :class="{active: activeTab==1}" @click="changeTab(2)">Replies</div>
       </div>
-      <div id="form-body">
-        
-        <section class="form-element" v-for="el in form.elements" :key="el">
-          <component class="form-componen" :is="componentDic[el.type]" v-bind="el"></component>
-        </section>
-      </div>
-      <div id="form-footer" >
-        <button class="kit-button" @click.prevent="submitForm()">Senden</button>        
-      </div>
-  </form>
-  <div id="loading" v-else>Loading...</div>
+    </div>
+    <div class="selected-tab-content">
+      <SubmitForm :submissionId="submissionId" :preset="preset" :form="form" v-if="activeTab==0" ></SubmitForm>
+      <FormSubmissions :selectedSubmissionIds="selectedSubmissionIds" :formName="form.metadata.formName" :elements="form.elements" :submissions="submissions" v-if="activeTab==1" @selected-submission-change="selectedSubmissionChange($event)" @delete-submission="deleteSubmission($event)" @edit-submission="passSubmissionData($event)"></FormSubmissions>
+      <Reply :selectedSubmissionIds="selectedSubmissionIds"  v-if="activeTab==2" />
+    </div>
+  </div>
+
 </template>
 
 <script>
 import axios from "axios";
-import FormInputElement from '../components/FormInputElement.vue'
-import FormHeaderElement from '../components/FormHeaderElement.vue'
-import FormSectionElement from '../components/FormSectionElement.vue'
-import FormFileUploadElement from '../components/FormFileUploadElement.vue'
-import FormSelectionElement from '../components/FormSelectionElement.vue'
+import FormSubmissions from '../components/FormSubmissions.vue'
+import SubmitForm from '../components/SubmitForm.vue'
+import Reply from '../components/Reply.vue'
 export default {
   name: 'DisplayForm',
   components: {
-    FormInputElement,
-    FormHeaderElement,
-    FormSectionElement,
-    FormFileUploadElement,
-    FormSelectionElement
+    FormSubmissions,
+    SubmitForm,
+    Reply,
   },
   data() {
     return {
-      form : {metadata: null, elements: []},
-      componentDic: {input: 'FormInputElement', header: 'FormHeaderElement', section: 'FormSectionElement', file: 'FormFileUploadElement', selection: 'FormSelectionElement'},
-      hasActiveInput: null,
-      id: null,
+      activeTab: 0,
+      uploadPercentage: 0,
+      form: {metadata: null, elements: []},
+      preset: false,
+      submissions: null,
+      submissionId: null,
+      selectedSubmissionIds: [],
     }
   },
-  beforeRouteUpdate(to, from, next) {
-    this.id = to.params.id
-    this.getFormData(this.id)
-    next()
-  },  
-  watch: {
-    id(newId, oldId) {
-      if(this.$route.fullPath.split("/")[this.$route.fullPath.lenght-2] == 'form') {
-        if(newId != oldId) {
-          this.getFormData(newId);
-        }
-      }
-    }
+  computed: {
+    tabIndicatorPosition: function() {
+      const xPos = 175*this.activeTab;
+      return {transform: `translate(${xPos}px, 34px)`}
+    },    
   },
   mounted() {
-    this.id= this.$route.params.id
-    this.getFormData(this.id);
+    this.getFormData(this.$route.params.id);
+    this.getSubmissions(this.$route.params.id);
   },
   methods: {
+    selectedSubmissionChange(event) {
+      if(event.type=='add') {
+        this.selectedSubmissionIds.push(event.id)
+      } else {
+        var index = this.selectedSubmissionIds.indexOf(event.id);
+        this.selectedSubmissionIds.splice(index, 1);
+      }
+      console.log(this.selectedSubmissionIds)
+    },
+    changeTab(tab) {
+      this.activeTab = tab      
+    },
+    passSubmissionData(event) {
+      this.preset=true
+      this.activeTab = 0
+      this.submissionId = event.data.displayData.formSubmissionId
+      console.log(event)
+    },
+    deleteSubmission(event) {
+      this.submissions.splice(this.submissions.indexOf(event.data), 1)
+      axios({
+        method: 'post',
+        url: 'https://www-3.mach.kit.edu/api/getFormSubmissions.php',
+        data: {formId: this.$route.params.id, mode: 'delete', formSubmissionId: event.data.displayData.formSubmissionId, submissionOwnerId: event.data.displayData.userId}
+      }).then(response => {  
+        console.log(response.data)          
+      })      
+    },
+    getSubmissions(id) {
+      axios({
+        method: 'post',
+        url: 'https://www-3.mach.kit.edu/api/getFormSubmissions.php',
+        data: {formId: id, mode: 'select'}
+      }).then(response => {
+        console.log(response.data)
+        if(response.data.error == null) {
+          if(response.data.formSubmissions != null) {
+            this.submissions = response.data.formSubmissions.submissions;
+          } else {
+            this.error=404
+          }
+        } else {
+          this.$router.push({name: 'Home'})
+        }
+        
+      })
+    },
     getFormData(id) {
       axios({
         method: 'post',
@@ -66,38 +105,22 @@ export default {
         data: {id: id}
       }).then((response) => {
         console.log(response.data)
-        if(response.data.success) {
+        if(response.data.error == null) {
           this.form = {metadata: null, elements: []}
           this.form.metadata = response.data.metadata
-          response.data.elements.forEach(element => {
-            const el = JSON.parse(element.data)
-            el['id'] = element.elementId 
-            el['type'] = element.type
-            if(el.type == 'input'){
-              this.hasActiveInput = true;
-            }      
-            this.form.elements.push(el)
-          })
+          this.form.elements = response.data.elements
+          // response.data.elements.forEach(element => {
+          //   const el = element.data
+          //   el['id'] = element.elementId 
+          //   el['type'] = element.type
+          //   this.form.elements.push(el)
+          // })
+          console.log(this.form)
         } else {
           this.$router.push({name: 'Home'})
         }
       })
-    },
-    submitForm() {
-      var formData = new FormData(document.getElementById("form"))
-      formData.append('formId', this.form.metadata.formId)
-      axios.post( 'https://www-3.mach.kit.edu/api/submitForm.php',
-        formData,
-        {
-          headers: {
-              'Content-Type': 'multipart/form-data'
-          }
-        }
-      ).then((response) => {
-          console.log(response.data)
-        }
-      )   
-    }
+    },    
   }
 
 }
@@ -105,32 +128,42 @@ export default {
 
 
 <style scoped lang="scss">
-  #form {
-    background-color: rgb(238, 238, 238);;
-    width: 100%;
-    max-width: 860px;
-    padding: 20px 10px;
+.form-overview {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;  
+}
+.form-overview-header {
+  width: 100%; 
+}
+#tabs {
+  background-color: #e3e3e3;
+  height: 37px;
+  display: flex;
+  flex-direction: row;
+  box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.2);
+  > .tab {
+    cursor: pointer;
     display: flex;
-    flex-direction: column;
+    width: 175px;
+    justify-content: center;
+    align-items: center;
   }
-  #form-header {
-    color: #2c3e50;
-    font-size: 18px;
-    border-bottom: 2px solid #2c3e50;
-    padding: 5px 0;
+  > #tab-indicator {
+    position: absolute;
+    height: 3px;
+    width: 175px;
+    background-color: #00876c;
+    transition: 300ms transform ease-in-out;
   }
-  #form-body {
-    height: 100%;
-    margin: 20px 0;
-    padding: 5px;
-  }
-  #form-footer {
-    padding: 5px;    
-  }
-  #loading {
-    background-color: rgb(238, 238, 238);
-    width: 100%;
-    max-width: 860px;
-    padding: 20px 10px;
-  }
+}
+.selected-tab-content {
+  width: 100%;
+  background-color: #f2f2f2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
 </style>

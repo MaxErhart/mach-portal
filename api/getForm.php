@@ -17,20 +17,25 @@ function main() {
   $_POST = json_decode(file_get_contents("php://input"), true);
   $formId = $_POST['id'];
 
+  $colValTypes = array(
+    "dateOfCreation" => "date",
+    "targetUsers" => "JSON"
+  );
   $conditions = array(
     "formId" => $formId,
   );
   $form = array();
-  $form["metadata"] = $dbSchema->selectTable("forms")->select()->conditions($conditions)->get(1)[0];
-  $form["elements"] = $dbSchema->selectTable("form_elements")->select()->conditions($conditions)->getAll(); 
+  $form["metadata"] = $dbSchema->selectTable("forms")->select()->conditions($conditions)->get(1, 0, $colValTypes)[0];
+  $colValTypes = array(
+    "data" => "JSON"
+  );  
+  $form["elements"] = $dbSchema->selectTable("form_elements")->select()->conditions($conditions)->getAll($colValTypes); 
   return $form;
 }
 
-// if(!isset($_SESSION['isLoggedIn'])) {
-  // echo json_encode(array("error" => "not logged in"));
-// } else if($id == NULL) {
-  // echo json_encode(array("error" => "invalid form id"));
-// } else {
-  echo json_encode(array_merge(array("success" => true), main()));
-// }
+if(!isset($_SESSION['isLoggedIn'])) {
+  echo json_encode(array("error" => "not logged in"));
+} else {
+  echo json_encode(array_merge(array("error" => NULL), main()));
+}
 ?>

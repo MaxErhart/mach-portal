@@ -66,7 +66,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['isLoggedIn'])) {
   $output = curl_exec($curl);
   curl_close($curl);
   if($output == "{}\n") {
-    $userTable = new dbTable("localhost", "mach-portal", "motor25", "mach_users", "users");
+    $userTable = new dbTable("localhost", "mach-portal", "motor25", "mach_portal", "users");
     $webuser = $userTable->select()->conditions(array("userId" => "4"))->get(1)[0];
 
 

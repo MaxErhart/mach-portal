@@ -8,13 +8,17 @@
           <div class="tooltip-text">{{tooltip}}</div>
         </span>
       </label>
-      <input :id="id" :name="id" type="file" ref="file" @change="fileU()">
-      <label :for="id" id="file-upload-text" :class="{active: fileUploaded}">
+      <input :id="elementId" :name="elementId" type="file" ref="file" @change="fileU()">
+      <label :for="elementId" class="email-content-lable" :class="{active: fileUploaded}">
         <template v-if="!fileUploaded">
           <span><img :src="require(`@/assets/upload.svg`)"></span>
           <span>Upload File</span>
         </template>
-        <template v-else >{{filename}}</template>  
+        <template v-else >{{filename}}</template>
+        <div class="progress-bar" v-if="uploadPercentage>0 && fileUploaded">
+          <div class="progress-percent">{{uploadPercentage+'%'}}</div>
+          <div class="progress-bar-backdrop" :style="{width: uploadPercentage+'%'}"></div>
+        </div>
       </label>
     </div>
   </div>
@@ -24,10 +28,12 @@
 export default {
   name: 'FormFileUploadElement',
   props: {
-    id: String,
+    preset: Boolean,
+    elementId: String,
     labelName: String,
     tooltip: String,
     required: Boolean,
+    uploadPercentage: Number,
   },
   data() {
     return {
@@ -35,12 +41,9 @@ export default {
       fileUploaded: false,
     }
   },
-  computed: {
-  },
   methods: {
     fileU() {
       const file = this.$refs['file'].value.split('\\')
-      console.log(file)
       if(file[file.length-1] == "") {
         this.fileUploaded = false
       } else {
@@ -106,25 +109,45 @@ export default {
       margin: 0px 0;    
     } 
   }
-  #file-upload-text {
-    border:1px solid #2c3e50;
-    height: 40px;
-    justify-content: center;
-    box-shadow: 0 0 2px 1px rgba(0,0,0,0.2);
 
-    background: linear-gradient(to right, rgba(0, 255, 0, 0.55) 50%, white 50%);
-    background-size: 200% 100%;
-    background-position: right bottom;rgba
+.email-content-lable {
+  position: relative;
+  height: 40px;
+  // width: 250px;
+  display: flex;
+  align-items: center;
+  margin: 2px 0 18px 0;
+  text-align: start;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  justify-content: center;
 
-    > span:first-child {
-      margin-right: 5px;
+  > .progress-bar {
+    > .progress-percent {
+      width: 100%;
+      position: absolute;
+      text-align: center;
+      transform: translateY(-2px);
+      z-index: 2;
     }
-    &:hover {
-      box-shadow: inset 0 0 2px 1px rgba(0,0,0,0.2);
+    > .progress-bar-backdrop {
+      position: absolute;
+      background-color: #00876c;
+      height: 100%;
+      border-radius: 10px;
     }
-    &.active {
-    background-position: left bottom;
-    transition:all 600ms ease;
-    }
-  } 
+    position: absolute;
+    height: 12px;
+    left: 0;
+    border-radius: 10px;
+    bottom: -18px;
+    width: 100%;
+    box-shadow: 0 0 2px 1px rgba(0,0,0,0.2)
+  }
+  > span:first-child {
+    margin-right: 5px;
+  }
+  &:hover {
+    box-shadow: inset 0 0 2px 1px rgba(0,0,0,0.2);
+  }  
+}  
 </style>

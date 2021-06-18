@@ -50,6 +50,7 @@ export default {
   props: {
     editable: Boolean,
     id: String,
+    preset: Boolean
   },
   data() {
     return {
@@ -62,17 +63,22 @@ export default {
     }
   },
   mounted() {
-    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {path: this.path, tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required}});
-  },
-  beforeUnmount() {
-    this.$store.commit('deleteSelection', {id: this.id});
+    if(this.preset) {
+      const element = this.$store.getters.getSelectionsData.filter(el => el.elementId == this.id)[0]
+      this.labelName = element.data.labelName
+      this.path = element.data.path
+      this.tooltip = element.data.tooltip
+      this.required = element.data.required
+    } else {
+      this.$store.commit('addSelection', {component: 'FileUploadElement', data: {path: this.path, tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required}, elementId: this.id, props: {editable: false, id: this.id, preset: true}});
+    }
   },  
   methods: {
     generateHtml() {
       return `<div><label>${this.content}<span class="span-content" v-if="required">*</span>:</label><${this.tag} class="item-content"/></div>`;
     },
     updateElData() {
-      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {path: this.path, tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required}})
+      this.$store.commit('updateSelectionsData', {elementId: this.id, data: {path: this.path, tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required}})
     }    
   },
 }

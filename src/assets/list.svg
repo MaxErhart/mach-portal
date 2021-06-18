@@ -1,32 +1,11 @@
-<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg" fill="#2c3e50">
+<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
  <g>
   <title>background</title>
-  <rect x="-1" y="-1" width="34" height="34" id="canvas_background" fill="none"/>
+  <rect fill="none" id="canvas_background" height="34" width="34" y="-1" x="-1"/>
  </g>
 
  <g>
   <title>Layer 1</title>
-  <g stroke="null" id="svg_16">
-   <g stroke="null" id="svg_1">
-    <rect stroke="null" x="9.631" y="27.41917" width="19.23567" height="2.895" id="svg_2"/>
-    <rect stroke="null" x="3.13333" y="27.41917" width="3.60267" height="2.895" id="svg_3"/>
-   </g>
-   <g stroke="null" id="svg_4">
-    <rect stroke="null" x="9.631" y="20.98584" width="19.23567" height="2.895" id="svg_5"/>
-    <rect stroke="null" x="3.13333" y="20.98584" width="3.60267" height="2.895" id="svg_6"/>
-   </g>
-   <g stroke="null" id="svg_7">
-    <rect stroke="null" x="3.13333" y="14.5525" width="3.60267" height="2.895" id="svg_8"/>
-    <rect stroke="null" x="9.631" y="14.5525" width="19.23567" height="2.895" id="svg_9"/>
-   </g>
-   <g stroke="null" id="svg_10">
-    <rect stroke="null" x="3.13333" y="8.11917" width="3.60267" height="2.895" id="svg_11"/>
-    <rect stroke="null" x="9.631" y="8.11917" width="19.23567" height="2.895" id="svg_12"/>
-   </g>
-   <g stroke="null" id="svg_13">
-    <rect stroke="null" x="3.13333" y="1.68583" width="3.60267" height="2.895" id="svg_14"/>
-    <rect stroke="null" x="9.631" y="1.68583" width="19.23567" height="2.895" id="svg_15"/>
-   </g>
-  </g>
+  <path id="svg_2" d="M9.631,1.68583l19.23567,0l0,2.895l-19.23567,0l0,-2.895z M3.13333,1.68583l3.60267,0l0,2.895l-3.60267,0l0,-2.895z M9.631,8.11917l19.23567,0l0,2.895l-19.23567,0l0,-2.895z M3.13333,8.11917l3.60267,0l0,2.895l-3.60267,0l0,-2.895z M9.631,14.5525l19.23567,0l0,2.895l-19.23567,0l0,-2.895zM3.13333,14.5525l3.60267,0l0,2.895l-3.60267,0l0,-2.895z M3.4,20.98584l3.60267,0l0,2.895l-3.60267,0l0,-2.895z M9.631,27.41917l19.23567,0l0,2.895l-19.23567,0l0,-2.895z M3.4,27.41917l3.60267,0l0,2.895l-3.60267,0l0,-2.895z M9.89767,20.98584l19.23567,0l0,2.895l-19.23567,0l0,-2.895z" opacity="undefined" stroke="null"/>
  </g>
 </svg>

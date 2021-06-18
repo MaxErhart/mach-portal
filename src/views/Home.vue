@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <h1>Home</h1>
+    <h1>Home of </h1>
   </div>
 </template>
 
@@ -18,6 +18,7 @@ export default {
 
 <style lang="scss" scoped>
   .home {
+    color: #2c3e50;
     text-align: center;
   }
 </style>

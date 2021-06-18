@@ -44,11 +44,11 @@ $instDict = array(
   "999292" => "Technische Mechanik - Bereich Dynamik",
 );
 $elementsDicBc = array(
-  "Ansp_Email" => "63380083",
-  "Ansp_Name" => "69957753",
-  "VAThema" => "26819698",
-  "Inst" => "52518604",
-  "XInfo" => "75984480"
+  "Ansp_Email" => "11145253",
+  "Ansp_Name" => "90460037",
+  "VAThema" => "53165428",
+  "Inst" => "44193425",
+  "XInfo" => "82199106"
 );
 $elementsDicMa = array(
   "Ansp_Email" => "11145252",
@@ -91,16 +91,12 @@ if($_SESSION["user"]["rights"]["theses"]) {
 if(!$oldData) {
 
   if($ids["read"] == "all") {
-
-    $conditions = array(
-      "formId" => $formId
-    );
     $colTypePairs = array(
       "data" => "JSON",
       "files" => "JSON",
       "dateOfSubmission" => "date"
     );
-    $theses = $dbSchema->selectTable("form_submissions")->select("formSubmissionId", "userId", "dateOfSubmission", "data", "files")->conditions($conditions)->orderBy("dateOfSubmission", "DESC")->get($_POST["limit"][1], $_POST["limit"][0], $colTypePairs);
+    $theses = $dbSchema->selectTable("form_submissions")->select("formSubmissionId", "userId", "dateOfSubmission", "data", "files")->orderBy("dateOfSubmission", "DESC")->get($_POST["limit"][1], $_POST["limit"][0], $colTypePairs);
 
     if(count($theses) < $_POST["limit"][1]-$_POST["limit"][0]) {
       $offset = count($theses);

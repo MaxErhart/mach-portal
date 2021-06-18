@@ -8,7 +8,7 @@
           <div class="tooltip-text">{{tooltip}}</div>
         </span>
       </label>
-      <select :name="id" id="input-main">
+      <select :name="elementId" id="input-main" v-model="value">
         <option v-for="(option, index) in options"  :key="index" :value="index">{{options[index]}}</option>
       </select>
     </div>
@@ -19,7 +19,8 @@
 export default {
   name: 'InputeElement',
   props: {
-    id: String,
+    preset: Boolean,
+    elementId: String,
     type: String,
     labelName: String,
     tag: String,
@@ -30,12 +31,17 @@ export default {
   },
   data() {
     return {
-
+      value: null
     }
   }, 
   methods: {
   
   },
+  mounted() {
+    if(this.preset) {
+      this.value = this.$store.getters.getFormSubmissionData.data[this.elementId];
+    }    
+  }
 }
 </script>
 

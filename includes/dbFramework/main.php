@@ -36,6 +36,8 @@ class dbSchema {
       if($groupWriteIds != NULL) {
         $groupWriteIds = array_column($groupWriteIds, "userId");
         $writeIds = array_unique(array_merge($groupWriteIds, $rights["write"]["users"]));
+      } else {
+        $writeIds = $rights["write"]["users"];
       }          
       return array("write" => $writeIds, "read" => "all");
     } else {
@@ -48,6 +50,8 @@ class dbSchema {
       if($groupReadIds != NULL) {
         $groupReadIds = array_column($groupReadIds, "userId");
         $readIds = array_unique(array_merge($groupReadIds, $rights["read"]["users"]));
+      } else {
+        $readIds = $rights["read"]["users"];
       }
       
   
@@ -61,7 +65,10 @@ class dbSchema {
       if($groupWriteIds != NULL) {
         $groupWriteIds = array_column($groupWriteIds, "userId");
         $writeIds = array_unique(array_merge($groupWriteIds, $rights["write"]["users"]));
-      }    
+      } else {
+        $writeIds = $rights["write"]["users"];
+      }
+    
       $readIds = array_unique(array_merge($writeIds, $readIds));
       return array("write" => $writeIds, "read" => $readIds);
     }
@@ -128,7 +135,58 @@ class dbTable {
     return $deleteQueryNoPK;
   }
 
+  function update($keyValuePairs, $condition) {
+    $updateQuery = new updateQuery($keyValuePairs, $condition, $this->table, $this->connection);
+    return $updateQuery;
+  }
+
 }
+
+class updateQuery {
+  private $connection;
+  private $table;
+  private $query;
+  
+  function __construct($keyValuePairs, $condition, $table, $connection) {
+    $this->connection = $connection;
+    $this->table = $table;
+    // print_r($keyValuePairs);
+    // print_r($condition);
+    if(!empty($keyValuePairs) && !empty($condition)) {
+      $query = "UPDATE `".$table."` SET";
+      $first = true;
+      foreach($keyValuePairs as $col => $val) {
+        if($first) {
+          $first = false;
+          $query .= " `".$col."`='".$val."'";
+        } else {
+          $query .= ", `".$col."`='".$val."'";
+        }
+      }
+      $first = true;
+      foreach($condition as $col => $val) {
+        if($first) {
+          $first = false;
+          $query .= " WHERE `".$col."`='".$val."'";
+        } else {
+          $query .= " AND `".$col."`='".$val."'";
+        }
+        
+      }
+      $this->query = $query;
+    }   
+  }
+
+  function commit() {
+    if($result = $this->connection->query($this->query)) {
+      return array("error" => NULL);
+    } else {
+      return array("error" => $this->connection->error);
+    }    
+  }
+
+}
+
 
 class deleteQueryNoPK {
   private $connection;
@@ -181,7 +239,6 @@ class deleteQuery {
   }
 
   function commit() {
-    echo $this->query;
     if($result = $this->connection->query($this->query)) {
       return array("error" => NULL);
     } else {
@@ -334,77 +391,123 @@ class selectQuery {
     }
   }
 
-  function conditions($conditions) {
-    if(!empty($conditions) && is_array($conditions)) {
-      $this->query .= " WHERE (";
-      $firstCol = true;
-
-      foreach($conditions as $col=>$vals) {
-        if($firstCol) {
-          $firstCol = false;
-          if(is_array($vals)) {
-            $firstVal = true;
-            foreach($vals as $val) {
-              if($firstVal) {
-                $firstVal = false;
-                $this->query .= "`".$this->table."`.`".$col."` = '".$val."'";
-              } else {
-                $this->query .= " OR `".$this->table."`.`".$col."` = '".$val."'";
+  function conditions($conditions, $range=NUll) {
+    if($range==NULL) {
+      if(!empty($conditions) && is_array($conditions)) {
+        $this->query .= " WHERE (";
+        $firstCol = true;
+  
+        foreach($conditions as $col=>$vals) {
+          if($firstCol) {
+            $firstCol = false;
+            if(is_array($vals)) {
+              $firstVal = true;
+              foreach($vals as $val) {
+                if($firstVal) {
+                  $firstVal = false;
+                  $this->query .= "`".$this->table."`.`".$col."` = '".$val."'";
+                } else {
+                  $this->query .= " OR `".$this->table."`.`".$col."` = '".$val."'";
+                }
               }
+              
+            } else {
+              $this->query .= "`".$this->table."`.`".$col."` = '".$vals."'";
             }
-            
+            $this->query .= ")";
           } else {
-            $this->query .= "`".$this->table."`.`".$col."` = '".$vals."'";
-          }
-          $this->query .= ")";
-        } else {
-          if(is_array($vals)) {
-            $firstVal = true;
-            foreach($vals as $val) {
-              if($firstVal) {
-                $firstVal = false;
-                $this->query .= " AND (`".$this->table."`.`".$col."` = '".$val."'";
-              } else {
-                $firstVal = false;
-                $this->query .= " OR `".$this->table."`.`".$col."` = '".$val."'";
+            if(is_array($vals)) {
+              $firstVal = true;
+              foreach($vals as $val) {
+                if($firstVal) {
+                  $firstVal = false;
+                  $this->query .= " AND (`".$this->table."`.`".$col."` = '".$val."'";
+                } else {
+                  $firstVal = false;
+                  $this->query .= " OR `".$this->table."`.`".$col."` = '".$val."'";
+                }
+  
               }
-
+            } else {
+              $this->query .= " AND (`".$this->table."`.`".$col."` = '".$vals."'";
             }
-          } else {
-            $this->query .= " AND (`".$this->table."`.`".$col."` = '".$vals."'";
+            $this->query .= ")";
           }
-          $this->query .= ")";
+  
         }
-
+        return $this;
+      } else {
+        return NULL;
       }
-
-
-      // foreach($conditions as $col=>$vals) {
-      //   if(is_array($vals)) {
-      //     foreach($vals as $val) {
-      //       if($first) {
-      //         $first = false;
-      //         $this->query .= "`".$this->table."`.`".$col."` = '".$val."'";
-      //       } else  {
-      //         $this->query .= " OR `".$this->table."`.`".$col."` = '".$val."'";
-      //       }
-      //     }
-      //     $this->query .= ")";
-      //   } else {
-      //     if($first) {
-      //       $first = false;
-      //       $this->query .= "`".$this->table."`.`".$col."` = '".$val."'";
-      //     } else  {
-      //       $this->query .= " AND `".$this->table."`.`".$col."` = '".$val."'";
-      //     }
-      //     $this->query .= ")";
-      //   }
-      // }
-      // echo $this->query;
-      return $this;
     } else {
-      return NULL;
+      if(!empty($conditions) && is_array($conditions)) {
+        $this->query .= " WHERE (";
+        $firstCol = true;
+  
+        foreach($conditions as $col=>$vals) {
+          if($firstCol) {
+            $firstCol = false;
+            if(is_array($vals)) {
+              $firstVal = true;
+              foreach($vals as $val) {
+                if($firstVal) {
+                  $firstVal = false;
+                  $this->query .= "`".$this->table."`.`".$col."` = '".$val."'";
+                } else {
+                  $this->query .= " OR `".$this->table."`.`".$col."` = '".$val."'";
+                }
+              }
+              
+            } else {
+              $this->query .= "`".$this->table."`.`".$col."` = '".$vals."'";
+            }
+            $this->query .= ")";
+          } else {
+            if(is_array($vals)) {
+              $firstVal = true;
+              foreach($vals as $val) {
+                if($firstVal) {
+                  $firstVal = false;
+                  $this->query .= " AND (`".$this->table."`.`".$col."` = '".$val."'";
+                } else {
+                  $firstVal = false;
+                  $this->query .= " OR `".$this->table."`.`".$col."` = '".$val."'";
+                }
+  
+              }
+            } else {
+              $this->query .= " AND (`".$this->table."`.`".$col."` = '".$vals."'";
+            }
+            $this->query .= ")";
+          }
+  
+        }
+        foreach($range as $col => $vals) {
+          if(is_array($vals)) {
+            $this->query .= " AND (((`".$this->table."`.`".$col."`>='".$vals[0]."') AND (`".$this->table."`.`".$col."`<'".$vals[1]."')) OR `".$this->table."`.`".$col."` IS NULL)";
+          } else {
+            $this->query .= " AND ((`".$this->table."`.`".$col."`>='".$vals."') OR `".$this->table."`.`".$col."` IS NULL)";
+          }
+          
+        }
+        // echo $this->query;
+        return $this;
+      } else {
+        $this->query .= " WHERE ";
+        foreach($range as $col => $vals) {
+          if(is_array($vals)) {
+            $this->query .= "((`".$this->table."`.`".$col."`>='".$vals[0]."') AND (`".$this->table."`.`".$col."`<'".$vals[1]."')) OR `".$this->table."`.`".$col."` IS NULL";
+          } else {
+            $this->query .= "(`".$this->table."`.`".$col."`>='".$vals."') OR `".$this->table."`.`".$col."` IS NULL";
+          }          
+          
+        }
+        // echo $this->query;
+        // echo "2";
+        return $this;    
+      }      
     }
+    
   }
 
   function orderBy($colName, $direction) {
@@ -436,7 +539,7 @@ class selectQuery {
   }
 
   function getAll($colTypePairs=NULL) {
-
+  	// echo $this->query;
     $queryReturnVals = array();
     $once = NULL;
     if($result = $this->connection->query($this->query)) {
@@ -446,9 +549,11 @@ class selectQuery {
             if($type=="JSON") {
               $row[$col] = json_decode($row[$col], true);
             } else if($type=="date") {
-              $dateTime = new DateTime($row[$col]);
-              $dateTime = $dateTime->format('d.m.Y');              
-              $row[$col] = $dateTime;
+              if(!$row[$col]==NULL) {
+                $dateTime = new DateTime($row[$col]);
+                $dateTime = $dateTime->format('d.m.Y');              
+                $row[$col] = $dateTime;
+              }
             } else if($type=="once") {
               if($once==NULL) {
                 $once = $row[$col];
@@ -470,13 +575,24 @@ class selectQuery {
 
 }
 
+
 // $serverName = "localhost";
 // $dbName = "mach_users";
 // $user = "mach-portal";
 // $dbPassword = "motor25";
 
 // $test = new dbSchema($serverName, $user, $dbPassword, $dbName);
-// $test = $test->selectTable("group_rights")->innerJoin("groupId", "groups", "id", array("name"))->select("id")->conditions(array("id"=>1));
+// $colTypePairs = array(
+//   "dateOfCreation" => "date",
+//   "deadline" => "date"
+// );    
+// $conditions = array(
+//   "userId" => "3"
+// );
+// $range = array(
+//   "deadline" => strval(date("y-m-d"))
+// );
+// $test->selectTable("forms")->select()->conditions($conditions, $range)->orderBy("dateOfCreation", "DESC")->getAll($colTypePairs);
 
 // print_r($test->getALL());
 ?>

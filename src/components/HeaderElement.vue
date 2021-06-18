@@ -33,6 +33,7 @@ export default {
   props: {
     editable: Boolean,
     id: String,
+    preset: Boolean
   },
   data() {
     return {
@@ -42,17 +43,20 @@ export default {
     }
   },
   mounted() {
-    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, content: this.content}});
-  },
-  beforeUnmount() {
-    this.$store.commit('deleteSelection', {id: this.id});
+    if(this.preset) {
+      const element = this.$store.getters.getSelectionsData.filter(el => el.elementId == this.id)[0]
+      this.tag = element.data.tag
+      this.content = element.data.content
+    } else {    
+      this.$store.commit('addSelection', {component: 'HeaderElement', data: {tag: this.tag, content: this.content}, elementId: this.id, props: {editable: false, id: this.id, preset: true}});
+    }
   },
   methods: {
     generateHtml() {
       return `<${this.tag} class="item-content">${this.content}</${this.tag}>`;
     },
     updateElData() {
-      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, content: this.content}});
+      this.$store.commit('updateSelectionsData', {elementId: this.id, data: {tag: this.tag, content: this.content}});
       console.log(this.$store.getters.getSelectionsData)
     }
   }

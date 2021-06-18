@@ -8,7 +8,7 @@
           <div class="tooltip-text">{{tooltip}}</div>
         </span>
       </label>
-      <input id="input-main" :type="inputType" :placeholder="placeholder"/>
+      <input class="input-main" :type="inputType" :placeholder="placeholder"/>
     </div>
 
     <div class="edit-element-window" v-if="editable">
@@ -53,6 +53,7 @@ export default {
   props: {
     editable: Boolean,
     id: String,
+    preset: Boolean,    
   },
   data() {
     return {
@@ -66,17 +67,23 @@ export default {
     }
   },
   mounted() {
-    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, inputType: this.inputType, tooltip: this.tooltip, placeholder: this.placeholder, required: this.required}});
-  },
-  beforeUnmount() {
-    this.$store.commit('deleteSelection', {id: this.id});
-  },  
+    if(this.preset) {
+      const element = this.$store.getters.getSelectionsData.filter(el => el.elementId == this.id)[0]
+      this.labelName = element.data.labelName
+      this.inputType = element.data.inputType
+      this.tooltip = element.data.tooltip
+      this.placeholder = element.data.placeholder
+      this.required = element.data.required
+    } else {
+      this.$store.commit('addSelection', {component: 'InputElement', data: {tag: this.tag, labelName: this.labelName, inputType: this.inputType, tooltip: this.tooltip, placeholder: this.placeholder, required: this.required}, elementId: this.id, props: {editable: false, id: this.id, preset: true}});
+    }
+  }, 
   methods: {
     generateHtml() {
       return `<div><label>${this.content}<span class="span-content" v-if="required">*</span>:</label><${this.tag} class="item-content"/></div>`;
     },
     updateElData() {
-      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, inputType: this.inputType, tooltip: this.tooltip, placeholder: this.placeholder, required: this.required}})
+      this.$store.commit('updateSelectionsData', {elementId: this.id, data: {tag: this.tag, labelName: this.labelName, inputType: this.inputType, tooltip: this.tooltip, placeholder: this.placeholder, required: this.required}})
     }    
   },
 }

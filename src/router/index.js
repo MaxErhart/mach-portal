@@ -7,6 +7,7 @@ import AllForms from '../views/AllForms.vue'
 import Submission from '../views/Submission.vue'
 import Theses from '../views/Theses.vue'
 import Rights from '../views/Rights.vue'
+import Email from '../views/Email.vue'
 
 const routes = [
   {
@@ -28,22 +29,33 @@ const routes = [
     component: Dashboard
   },
   {
-    path: '/createform',
+    path: '/createform/:id?',
     name: 'CreateForm',
     component: CreateForm
   },
   {
+    path: '/email/:id?',
+    name: 'Email',
+    component: Email
+  },  
+  {
     path: '/form',
     name: 'AllForms',
-    component: AllForms
+    component: AllForms,
   },
   {
     path: '/submissions/:id',
     component: Submission
   },   
   {
-    path: '/form/:id',
-    component: DisplayForm
+    path: '/form/:id/:submissionId?',
+    component: DisplayForm,
+    children: [
+      {
+        path: 'submissions/',
+        component: Submission
+      },
+    ]    
   },
   {
     path: '/theses',

@@ -53,7 +53,7 @@ export default {
       currentActiveRouteIndex: 0,
       isSignedIn: false,
       user: null,
-      webuserTopics: ["home", "about", "theses"],
+      webuserTopics: ["home", "about", "theses", "dashboard"],
     }
   },
   created() {
@@ -86,6 +86,13 @@ export default {
     },
     userInformation() {
       return this.$store.getters.getUserInformation
+    }
+  },
+  watch: {
+    currentRoute(newRoute, oldRoute) {
+      if(newRoute != oldRoute) {
+        this.currentActiveRouteIndex = this.routes.indexOf(newRoute)
+      }
     }
   },
   methods: {
@@ -163,7 +170,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
 }
-
+h1 {
+  // color: #00876c;
+  border-bottom: 1px solid #ddd;
+  display: inline-block;
+  padding-bottom: 10px;
+}
 #main {
   display: grid;
   grid-template-rows: auto;
@@ -225,7 +237,8 @@ body {
 
 #main-body {
   width: 100%;
-  background-color: #b1ded4;
+  // background-color: rgba(0, 119, 85, 0.1);
+  background-color: #c8ebdf;
   padding: 20px 20px 0 20px;
   display: flex;
   justify-content: center;

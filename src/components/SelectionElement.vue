@@ -50,6 +50,7 @@ export default {
   props: {
     editable: Boolean,
     id: String,
+    preset: Boolean
   },
   data() {
     return {
@@ -63,14 +64,20 @@ export default {
     }
   },
   mounted() {
-    this.$store.commit('addSelection', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required, numOptions: this.numOptions, options: this.options}});
-  },
-  beforeUnmount() {
-    this.$store.commit('deleteSelection', {id: this.id});
+    if(this.preset) {
+      const element = this.$store.getters.getSelectionsData.filter(el => el.elementId == this.id)[0]
+      this.labelName = element.data.labelName
+      this.numOptions = element.data.numOptions
+      this.tooltip = element.data.tooltip
+      this.options = element.data.options
+      this.required = element.data.required
+    } else {
+      this.$store.commit('addSelection', {component: 'SelectionElement', data: {tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required, numOptions: this.numOptions, options: this.options}, elementId: this.id, props: {editable: false, id: this.id, preset: true}});
+    }
   },  
   methods: {
     updateElData() {
-      this.$store.commit('updateSelectionsData', {id: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required, numOptions: this.numOptions, options: this.options}})
+      this.$store.commit('updateSelectionsData', {elementId: this.id, type: this.type, data: {tag: this.tag, labelName: this.labelName, tooltip: this.tooltip, required: this.required, numOptions: this.numOptions, options: this.options}})
     }    
   },
 }

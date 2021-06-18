@@ -21,7 +21,7 @@ export default {
     }
   },
   mounted() {
-    this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[1])
+    this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[2])
   },
   methods: {
 

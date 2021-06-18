@@ -69,7 +69,7 @@ export default {
     }
   },  
   mounted() {
-    this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[2])
+    this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[1])
     this.changeTab(0);
     this.user = JSON.parse(localStorage.user)
     document.addEventListener("scroll", ($event) => this.infiniteScroll($event));

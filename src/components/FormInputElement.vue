@@ -8,7 +8,7 @@
           <div class="tooltip-text">{{tooltip}}</div>
         </span>
       </label>
-      <input :name="id" :type="inputType" :placeholder="placeholder"/>
+      <input :name="elementId" :type="inputType" :placeholder="placeholder" v-model="value"/>
     </div>
   </div>
 </template>
@@ -17,7 +17,8 @@
 export default {
   name: 'InputeElement',
   props: {
-    id: String,
+    preset: Boolean,
+    elementId: String,
     labelName: String,
     inputType: String,
     tag: String,
@@ -27,9 +28,14 @@ export default {
   },
   data() {
     return {
-
+      value: null
     }
-  },  
+  },
+  mounted() {
+    if(this.preset) {
+      this.value = this.$store.getters.getFormSubmissionData.data[this.elementId];
+    }
+  },
   methods: {
    
   },

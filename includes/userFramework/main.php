@@ -1,7 +1,5 @@
 <?php
-// session_start();
 include_once("D:\inetpub\MPortal\includes\dbFramework\main.php");
-// print_r($_SESSION);
 class user {
   private $schema;
   private $isLoggedIn;
@@ -12,17 +10,17 @@ class user {
   private $mail;
   private $userId;
   private $groupIds = array();
-  private $userRights = array(
-    "theses" => array(
-      "read" => array(
-        // empty if everyone is allowed
-      ),
-      "write" => array(
-        "groups" => array("MACH-Portal-Admin"),
-        "users" => array()
-      ), 
-    ),
-  );
+  // private $userRights = array(
+  //   "theses" => array(
+  //     "read" => array(
+  //       // empty if everyone is allowed
+  //     ),
+  //     "write" => array(
+  //       "groups" => array("MACH-Portal-Admin"),
+  //       "users" => array()
+  //     ), 
+  //   ),
+  // );
   private $groupRights = array();
 
   function __construct($sessionVariables) {
@@ -55,14 +53,13 @@ class user {
       $attributes = array(
         "firstname"=>$this->fname,
         "lastname"=>$this->lname,
-        "mail"=>$this->mail,
-        "affiliation"=>json_encode($this->affiliation)
+        "mail"=>$this->mail
       );
-      $dbUser = $table->select()->conditions($attributes)->get(1)[0];
+      $dbUser = $table->select()->conditions($attributes)->get(1);
       if(empty($dbUser)) {
         $this->userId = $table->insert($attributes)->commit();
       } else {
-        $this->userId = $dbUser["userId"];
+        $this->userId = $dbUser[0]["userId"];
       }
       return $this->userId;
     } else {
@@ -287,7 +284,7 @@ class user {
       "lname" => $this->lname,
       "mail" => $this->mail,
       "affiliation" => $this->affiliation,
-      "groups" => $this->groups,
+      "groups" => $this->groupIds,
       "rights" => $this->getRights(),
       "userId" => $this->userId
     );

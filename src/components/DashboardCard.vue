@@ -1,12 +1,12 @@
 <template>
-    <div class="dashboard-card" @click="redirect(route)">
-      <div class="dashboard-card-icon" v-if="!active">
-        <img :src="require(`@/assets/${icon}`)">
-      </div>
-      <div class="dashboard-card-text" v-if="!active">
-        {{text}}
-      </div>
+  <div class="dashboard-card" @click="redirect(route)">
+    <div class="dashboard-card-icon" v-if="!active">
+      <img :src="require(`@/assets/${icon}`)">
     </div>
+    <div class="dashboard-card-text" v-if="!active">
+      {{text}}
+    </div>
+  </div>
 </template>
 
 <script>
