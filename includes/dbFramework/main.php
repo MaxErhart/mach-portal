@@ -158,20 +158,55 @@ class updateQuery {
       foreach($keyValuePairs as $col => $val) {
         if($first) {
           $first = false;
-          $query .= " `".$col."`='".$val."'";
+          if($val==NULL) {
+            $query .= " `".$col."`=NULL";
+          } else {
+            $query .= " `".$col."`='".$val."'";
+          }
         } else {
-          $query .= ", `".$col."`='".$val."'";
+          if($val==NULL) {
+            $query .= ", `".$col."`=NULL";
+          } else {
+            $query .= ", `".$col."`='".$val."'";
+          }          
+          
         }
       }
+      
       $first = true;
       foreach($condition as $col => $val) {
         if($first) {
           $first = false;
-          $query .= " WHERE `".$col."`='".$val."'";
+          if(is_array($val)) {
+            $firstVal = true;
+            foreach($val as $item) {
+              if($firstVal) {
+                $firstVal = false;
+                $query .= " WHERE (`".$col."`='".$item."'";
+              } else {
+                $query .= " OR `".$col."`='".$item."'";
+              }
+            }
+            $query .= ")";
+          } else {
+            $query .= " WHERE `".$col."`='".$val."'";
+          }
         } else {
-          $query .= " AND `".$col."`='".$val."'";
+          if(is_array($val)) {
+            $firstVal = true;
+            foreach($val as $item) {
+              if($firstVal) {
+                $firstVal = false;
+                $query .= " AND (`".$col."`='".$item."'";
+              } else {
+                $query .= " OR `".$col."`='".$item."'";
+              }
+            }
+            $query .= ")";
+          } else {
+            $query .= " AND `".$col."`='".$val."'";
+          }
         }
-        
       }
       $this->query = $query;
     }   
@@ -275,6 +310,7 @@ class insertQuery {
   }
 
   function commit() {
+    // echo $this->query;
     if($result = $this->connection->query($this->query)) {
       return $this->connection->insert_id;
     } else {

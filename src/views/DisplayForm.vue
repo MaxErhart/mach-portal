@@ -5,13 +5,15 @@
         <div id="tab-indicator" :style="tabIndicatorPosition"></div>
         <div class="tab" :class="{active: activeTab==0}" @click="changeTab(0)">Submit Form</div>
         <div class="tab" :class="{active: activeTab==1}" @click="changeTab(1)">Form Submissions</div>
-        <div class="tab" :class="{active: activeTab==1}" @click="changeTab(2)">Replies</div>
+        <div class="tab" :class="{active: activeTab==2}" @click="changeTab(2)">Replies</div>
+        <div class="tab" :class="{active: activeTab==3}" @click="changeTab(3)">Flags</div>
       </div>
     </div>
     <div class="selected-tab-content">
       <SubmitForm :submissionId="submissionId" :preset="preset" :form="form" v-if="activeTab==0" ></SubmitForm>
-      <FormSubmissions :selectedSubmissionIds="selectedSubmissionIds" :formName="form.metadata.formName" :elements="form.elements" :submissions="submissions" v-if="activeTab==1" @selected-submission-change="selectedSubmissionChange($event)" @delete-submission="deleteSubmission($event)" @edit-submission="passSubmissionData($event)"></FormSubmissions>
-      <Reply :selectedSubmissionIds="selectedSubmissionIds"  v-if="activeTab==2" />
+      <FormSubmissions :replies="replies" :selectedSubmissionIds="selectedSubmissionIds" :formName="form.metadata.formName" :elements="form.elements" :submissions="submissions" v-if="activeTab==1" @selected-submission-change="selectedSubmissionChange($event)" @delete-submission="deleteSubmission($event)" @edit-submission="passSubmissionData($event)"></FormSubmissions>
+      <Reply :formId="form.metadata.formId" :selectedSubmissionIds="selectedSubmissionIds"  v-if="activeTab==2" />
+      <FlagSubmission :selectedSubmissionIds="selectedSubmissionIds"  v-if="activeTab==3" />
     </div>
   </div>
 
@@ -22,15 +24,18 @@ import axios from "axios";
 import FormSubmissions from '../components/FormSubmissions.vue'
 import SubmitForm from '../components/SubmitForm.vue'
 import Reply from '../components/Reply.vue'
+import FlagSubmission from '../components/FlagSubmission.vue'
 export default {
   name: 'DisplayForm',
   components: {
     FormSubmissions,
     SubmitForm,
     Reply,
+    FlagSubmission,
   },
   data() {
     return {
+      replies: null,
       activeTab: 0,
       uploadPercentage: 0,
       form: {metadata: null, elements: []},
@@ -87,6 +92,7 @@ export default {
       }).then(response => {
         console.log(response.data)
         if(response.data.error == null) {
+          this.replies = response.data.formSubmissions.replies
           if(response.data.formSubmissions != null) {
             this.submissions = response.data.formSubmissions.submissions;
           } else {
@@ -109,12 +115,6 @@ export default {
           this.form = {metadata: null, elements: []}
           this.form.metadata = response.data.metadata
           this.form.elements = response.data.elements
-          // response.data.elements.forEach(element => {
-          //   const el = element.data
-          //   el['id'] = element.elementId 
-          //   el['type'] = element.type
-          //   this.form.elements.push(el)
-          // })
           console.log(this.form)
         } else {
           this.$router.push({name: 'Home'})

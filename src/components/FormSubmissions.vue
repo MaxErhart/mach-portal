@@ -32,13 +32,23 @@
           </template>
         </div>
         <div class="row" v-for="(row, rowIndex) in data" :key="rowIndex">
-          <div class="row-item red-flag" v-for="(item, itemIndex) in row" :key="itemIndex">
-            <div class="flag" v-if="itemIndex==0">
-              <svg width="32px" height="32px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+          <div class="row-item" v-for="(item, itemIndex) in row.items" :key="itemIndex">
+
+            <div class="flag" v-if="itemIndex==0 && row.flag!=null" :title="row.flagHoverText">
+              <svg :fill="row.flag" width="32px" height="32px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
                 <path d="M8,11.4939236 L8,29.9939236 L9,29.9939236 L9,15.4917069 C10.2662537,15.0112371 12.688621,14.5518079 16,15.9939238 C21.022644,18.1813011 24,15.9939236 24,15.9939236 L24,4.99392359 C24,4.99392359 21.0237426,7.23025181 16,4.9939236 C10.9762573,2.75759551 8,4.99392359 8,4.99392359 L8,11.4939236 L8,11.4939236 Z" id="flag" sketch:type="MSShapeGroup">
                 </path>
-              </svg>
+              </svg> 
             </div>
+            <div class="flag-placeholder" v-if="itemIndex==0 && row.flag==null"></div>
+            <div class="replies" v-if="itemIndex==0 && row.numReplies > 0">
+              <div class="num-replies">{{row.numReplies}}</div>
+              <svg width="32px" height="32px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" version="1.1" xml:space="preserve">
+                  <path d="M26.22515,17.94955l-20.45031,0c-0.35061,0 -0.63483,-0.28588 -0.63483,-0.6384c0,-0.35259 0.28422,-0.6384 0.63483,-0.6384l20.45024,0c0.35061,0 0.63483,0.28575 0.63483,0.6384c0,0.35253 -0.28415,0.6384 -0.63476,0.6384z M26.22515,13.86155l-20.45031,0c-0.35061,0 -0.63483,-0.28588 -0.63483,-0.6384c0,-0.35259 0.28422,-0.6384 0.63483,-0.6384l20.45024,0c0.35061,0 0.63483,0.28581 0.63483,0.6384c0,0.35253 -0.28415,0.6384 -0.63476,0.6384z M26.22515,9.7736l-20.45031,0c-0.35061,0 -0.63483,-0.28588 -0.63483,-0.6384c0,-0.35259 0.28422,-0.6384 0.63483,-0.6384l20.45024,0c0.35061,0 0.63483,0.28581 0.63483,0.6384c0,0.35253 -0.28415,0.6384 -0.63476,0.6384z M25.50402,29.3756c-0.14709,0 -0.29258,-0.05133 -0.40934,-0.15028l-6.34029,-5.37496l-14.04676,0c-2.39777,-0.00006 -4.34847,-1.96162 -4.34847,-4.37273l0,-12.48056c0,-2.41112 1.9507,-4.37267 4.34847,-4.37267l22.58474,0c2.39777,0 4.34847,1.96162 4.34847,4.37267l0,12.48056c0,2.41112 -1.9507,4.37267 -4.34847,4.37267l-1.15366,0l0,4.8869c0,0.2484 -0.14319,0.4742 -0.36721,0.57884c-0.08548,0.03996 -0.17677,0.05956 -0.26749,0.05956zm-20.79639,-25.4744c-1.69764,0 -3.07876,1.38878 -3.07876,3.09587l0,12.48056c0,1.70702 1.38112,3.09587 3.07876,3.09587l14.27862,0c0.14977,0 0.29469,0.05324 0.40928,0.15028l5.47347,4.64022l0,-4.1521c0,-0.35259 0.28428,-0.6384 0.63489,-0.6384l1.78848,0c1.69764,0 3.07876,-1.38884 3.07876,-3.09587l0,-12.48056c0,-1.70709 -1.38112,-3.09587 -3.07876,-3.09587l-22.58474,0z" id="svg_3"/>
+              </svg>              
+            </div>
+            <div class="replies-placeholder" v-if="itemIndex==0" :class="{'no-replies': row.numReplies==0}"></div>
+            
             <a :href="item.data" v-if="item.type=='file'">{{item.data.split("/").pop().split("_").pop()}}</a>
             
             <template v-else-if="item.type=='data'">{{item.data}}</template>
@@ -74,6 +84,7 @@ export default {
     elements: Object,
     submissions: Object,
     selectedSubmissionIds: Object,
+    replies: Object,
   },
   components: {
   },
@@ -91,7 +102,7 @@ export default {
     data: function() {
       var data = []
       for(let i=0; i<this.submissions.length; i++) {
-        var row = []
+        var row = {flag: this.submissions[i]['displayData']['submission_flag'], flagHoverText: this.submissions[i]['displayData']['flag_hover_text'], items: [], numReplies: this.submissions[i]['displayData']['formSubmissionId'] in this.replies ? this.replies[this.submissions[i]['displayData']['formSubmissionId']].length : 0}
         for(let j=0; j<this.colNames.length; j++) {
           const temp = {}
           
@@ -121,7 +132,7 @@ export default {
             temp['type'] = 'data'
             temp['data'] = this.submissions[i]['displayData'][this.colNames[j].id]
           }
-          row.push(temp)
+          row.items.push(temp)
         }
         data.push(row)
       }
@@ -299,45 +310,87 @@ export default {
     > * {
       border-top: 1px solid #2c3e50;
       border-bottom: 1px solid #2c3e50;
+      
     }
     
     > :first-child {
       border-left: 1px solid #2c3e50;
+      border-radius: 2px 0 0 2px;
       border-top: none;
+      // border-top: 1px solid #2c3e50;
     }
     > :first-child::before {
         position: absolute;
         content: "";
-        padding-left: 10px;
+        padding-left: 3px;
         border-top: 1px solid #2c3e50;
+        border-radius: 2px 0 0 0;
         top: 0;
     }
     > :first-child::after {
         position: absolute;
         content: "";
-        padding-left: calc(100% - 26px);
+        padding-left: calc(100% - 42px);
         border-top: 1px solid #2c3e50;
         top: 0;
         right: 0;
     }    
     > :last-child {
       border-right: 1px solid #2c3e50;
+      border-radius: 0 2px 2px 0;
     }
   }
   .flag {
     position: absolute;
     top: 0;
-    fill: #28a745;
-    transform: scale(0.5) translateY(-100%);
+    > svg {
+      width: 16px;
+      height: 16px;
+    }
+    transform: translateY(-48%);
   }
+  .flag-placeholder{
+    position: absolute;
+    top: 0;    
+    border-bottom: 1px solid #2c3e50;
+    width: 16px;
+  }
+  .replies {
+    font-size: 14px;
+    justify-content: center;
+    align-items: center;
+    width: 24px;
+    display: flex;
+    flex-direction: row;
+    position: absolute;
+    top: 0;
+    left: 16px;
+    transform: translateY(-50%);
+    > svg {
+      width: 16px;
+      height: 16px;
+    }    
+  }
+
+  .replies-placeholder{
+    position: absolute;
+    top: 0;
+    left: 13px; 
+    border-bottom: 1px solid #2c3e50;
+    width: 4px;
+    &.no-replies {
+      width: 29px;
+    }
+  }
+
   .form-item-options {
     display: flex;
     flex-direction: row;
     align-items: center;
     height: 100%;
+    width: 100%;
     > .option {
       box-sizing: border-box;
-      border: 1px solid #2c3e50;
       border-radius: 2px;
       background-color: #e0e0e0;
       width: 100%;      

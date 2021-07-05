@@ -238,7 +238,8 @@ h1 {
 #main-body {
   width: 100%;
   // background-color: rgba(0, 119, 85, 0.1);
-  background-color: #c8ebdf;
+  background-color: #b2dbd2;
+  // background-color: #00876c;
   padding: 20px 20px 0 20px;
   display: flex;
   justify-content: center;

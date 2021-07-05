@@ -7,8 +7,22 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+function getSubmissionReplies($dbSchema, $data) {
+  $conditions = array(
+    "formId" =>$data["formId"]
+  );
+  $submissionReplies = $dbSchema->selectTable("submission_replies")->select()->conditions($conditions)->getAll();
+  $result = array();
+  foreach($submissionReplies as $reply) {
+    $result[$reply["formSubmissionId"]][] = $reply;
+  }
+  return $result;
+}
+
 function getFormSubmissions($dbSchema, $ids, $data) {
   $result = array();
+
+  $result["replies"] = getSubmissionReplies($dbSchema, $data);
   $formId = $data["formId"];
   $formData = array();
   $colTypePairs = array(
@@ -21,7 +35,7 @@ function getFormSubmissions($dbSchema, $ids, $data) {
     $conditions = array(
       "formId" => $formId
     );
-    $formData = $dbSchema->selectTable("form_submissions")->innerJoin("userId", "users", "userId", array("firstname", "lastname", "mail", "userId"))->innerJoin("formId", "forms", "formId", array("formName"))->select("formSubmissionId", "data", "dateOfSubmission", "files")->conditions($conditions)->getAll($colTypePairs);      
+    $formData = $dbSchema->selectTable("form_submissions")->innerJoin("userId", "users", "userId", array("firstname", "lastname", "mail", "userId"))->innerJoin("formId", "forms", "formId", array("formName"))->select("formSubmissionId", "data", "dateOfSubmission", "files", "submission_flag", "flag_hover_text")->conditions($conditions)->getAll($colTypePairs);
     if($formData != NULL) {
       $result["formName"] = $formData[0];
       $submissions = $formData[1];
@@ -57,7 +71,7 @@ function getFormSubmissions($dbSchema, $ids, $data) {
       "formId" => $formId,
       "userId" => $ids["read"]
     );
-    $formData = $dbSchema->selectTable("form_submissions")->innerJoin("userId", "users", "userId", array("firstname", "lastname", "mail", "userId"))->innerJoin("formId", "forms", "formId", array("formName"))->select("formSubmissionId", "data", "dateOfSubmission", "files")->conditions($conditions)->getAll($colTypePairs);       
+    $formData = $dbSchema->selectTable("form_submissions")->innerJoin("userId", "users", "userId", array("firstname", "lastname", "mail", "userId"))->innerJoin("formId", "forms", "formId", array("formName"))->select("formSubmissionId", "data", "dateOfSubmission", "files", "submission_flag", "flag_hover_text")->conditions($conditions)->getAll($colTypePairs);
     if($formData != NULL) {
       $result["formName"] = $formData[0];
       $submissions = $formData[1];
