@@ -75,6 +75,7 @@ export default {
       cursor: default;
       pointer-events: auto;
     > .tooltip-text {
+      z-index: 2;
       max-width: 320px;
       white-space: pre-line;     
       border: 1px solid white;

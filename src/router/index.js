@@ -11,8 +11,14 @@ import Email from '../views/Email.vue'
 import AnonFormSubmit from '../views/AnonFormSubmit.vue'
 import MachFormSubmit from '../views/MachFormSubmit.vue'
 import MatwerkFormSubmit from '../views/MatwerkFormSubmit.vue'
+import TestView from '../views/TestView.vue'
 //import ListAnonForm from '../views/DisplayListAnonForm.vue'
 const routes = [
+  {
+    path: '/tmp',
+    name: 'temp',
+    component: TestView
+  },
   {
     path: '/',
     name: 'Home',
