@@ -60,7 +60,7 @@ export default createStore({
       console.log(state.selectionsData)
     },
     deleteSelection(state, payload) {
-      const index = state.selectionsData.indexOf(state.selectionsData.find(el => el.id == payload.id));
+      const index = state.selectionsData.indexOf(state.selectionsData.find(el => el.elementId == payload.elementId));
       state.selectionsData.splice(index, 1);
     },
     deleteSelections(state) {

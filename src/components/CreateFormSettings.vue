@@ -10,7 +10,7 @@
     </section>
     <section class="multiple-submissions-section">
       <label for="multiple-submissions">Multiple Submissions per User</label>
-      <input type="checkbox" id="multiple-submissions" :checked="Boolean(multipleSubmissions)" @change="emitChange($event, 'multipleSubmissions')">
+      <input type="checkbox" id="multiple-submissions" :checked="multipleSubmissions" @change="emitChange($event, 'multipleSubmissions')">
     </section>           
   </div>
 </template>

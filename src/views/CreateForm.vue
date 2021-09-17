@@ -8,6 +8,7 @@
         <div class="tab" :class="{active: activeTab==1}" @click="changeTab(1)">Target Users</div>
         <div class="tab" :class="{active: activeTab==2}" @click="changeTab(2)">Form Body</div>
         <div class="tab" :class="{active: activeTab==3}" @click="changeTab(3)">Email Notifications</div>
+        <div class="tab" :class="{active: activeTab==4}" @click="changeTab(4)">Anon Form Settings</div>
       </div>
     </div>    
     
@@ -16,6 +17,7 @@
       <UserAndGroupSelect :users="users" :groups="groups" :userSelection="userSelection" :groupSelection="groupSelection" @remove-user="removeUser($event)" @remove-group="removeGroup($event)" @add-user="userSelection.push($event.user)" @add-group="groupSelection.push($event.group)" v-if="activeTab==1"/>
       <FormCreator :presetSelection="presetSelection" v-if="activeTab==2"/>
       <Email :emails="emails" :formId="$route.params.id" :userSelection="userSelection" :users="users" :groupSelection="groupSelection" :groups="groups" v-if="activeTab==3"/>
+      <CreateAnonFormSettings :anonTitle="anonTitle" :anonBody="anonBody" :anonSupportEmail="anonSupportEmail" @settings-change="updateSettings($event)" v-if="activeTab==4"/>
     </div>
     <div class="create-form-footer" v-if="activeTab != 3">
       <button class="kit-button" @click="update()" v-if="$route.params.id">Update</button>
@@ -29,6 +31,7 @@ import axios from "axios";
 import FormCreator from '@/components/FormCreator.vue'
 import CreateFormSettings from '@/components/CreateFormSettings.vue'
 import UserAndGroupSelect from '@/components/UserAndGroupSelect.vue'
+import CreateAnonFormSettings from '@/components/CreateAnonFormSettings.vue'
 import Email from '@/components/Email.vue'
 export default {
   name: 'CreateForm',
@@ -37,6 +40,7 @@ export default {
     CreateFormSettings,
     UserAndGroupSelect,
     Email,
+    CreateAnonFormSettings
   },
   data() {
     return {
@@ -54,6 +58,10 @@ export default {
       presetSelection: null,
 
       emails: null,
+  
+      anonTitle: null,
+      anonBody: null,
+      anonSupportEmail: null,
 
       componentDic: {
         input: 'InputElement',
@@ -89,13 +97,13 @@ export default {
       axios({
         method: 'post',
         url: 'https://www-3.mach.kit.edu/api/getForm.php',
-        data: {id: this.$route.params.id}
+        data: {mode: 'select', id: this.$route.params.id}
       }).then((response) => {
         if(response.data.error == null) {
           console.log(response.data)
           this.formName = response.data.metadata.formName
           this.deadline = response.data.metadata.deadline
-          this.multipleSubmissions = response.data.metadata.multipleSubmissions
+          this.multipleSubmissions =  Boolean(Number(response.data.metadata.multipleSubmissions))
           this.userSelection = response.data.metadata.targetUsers.users
           this.groupSelection = response.data.metadata.targetUsers.groups
           var selections = []
@@ -105,10 +113,10 @@ export default {
               props: {editable: false, id: el.elementId, preset: true},
               elementId: el.elementId,
               data: el.data,
+              formElementId: el.formElementId,
             }
             selections.push(selection)      
           })
-          console.log(selections)
           this.$store.commit('setSelections', selections)                  
         } else {
           this.$router.push({name: 'Home'})
@@ -147,16 +155,17 @@ export default {
       axios({
         method: 'post',
         url: 'https://www-3.mach.kit.edu/api/saveForm.php',
-        data: {mode: 'insert', formName: this.formName, deadline: this.deadline, multipleSubmissions: this.multipleSubmissions, targetUsers: this.userSelection, targetGroups: this.groupSelection, elements: this.$store.getters.getSelectionsData}
+        data: {mode: 'insert', formName: this.formName, deadline: this.deadline, multipleSubmissions: this.multipleSubmissions, targetUsers: this.userSelection, targetGroups: this.groupSelection, elements: this.$store.getters.getSelectionsData, anonTitle: this.anonTitle, anonBody: this.anonBody, anonSupportEmail: this.anonSupportEmail}
       }).then(response => {
         console.log(response.data)
       })
     },
     update() {
+      console.log(this.$store.getters.getSelectionsData)
       axios({
         method: 'post',
         url: 'https://www-3.mach.kit.edu/api/saveForm.php',
-        data: {mode: 'update',formId: this.$route.params.id,formName: this.formName, deadline: this.deadline, multipleSubmissions: this.multipleSubmissions, targetUsers: this.userSelection, targetGroups: this.groupSelection, elements: this.$store.getters.getSelectionsData}
+        data: {mode: 'update',formId: this.$route.params.id,formName: this.formName, deadline: this.deadline, multipleSubmissions: this.multipleSubmissions, targetUsers: this.userSelection, targetGroups: this.groupSelection, elements: this.$store.getters.getSelectionsData, anonTitle: this.anonTitle, anonBody: this.anonBody, anonSupportEmail: this.anonSupportEmail}
       }).then(response => {
         console.log(response.data)
       })

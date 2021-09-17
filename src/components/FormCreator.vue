@@ -105,10 +105,11 @@ export default {
       this.selections[this.selections.length - 1].bottom = bottom;
     },
     deleteItem(element) {
-
+      console.log(element)
       this.$store.commit('deleteSelection', {elementId: element.elementId});
       const index = this.selections.indexOf(element)
-      this.selections.splice(index, 1)      
+      this.selections.splice(index, 1)
+      console.log(this.$store.getters.getSelectionsData) 
     },
     generateElHtml(element) {
       if(element.type == 'header') {

@@ -48,8 +48,7 @@
               </svg>              
             </div>
             <div class="replies-placeholder" v-if="itemIndex==0" :class="{'no-replies': row.numReplies==0}"></div>
-            
-            <a :href="item.data" v-if="item.type=='file'">{{item.data.split("/").pop().split("_").pop()}}</a>
+            <a :href="'https://www-3.mach.kit.edu/dfiles/' + item.data" v-if="item.type=='file'">{{item.data.split("/").pop().split("_").pop()}}</a>
             
             <template v-else-if="item.type=='data'">{{item.data}}</template>
             
@@ -113,6 +112,8 @@ export default {
               // temp['file'] = this.submissions[i]['displayData']['files'][this.colNames[j].id]
             } else if(this.colNames[j].type == 'input'){
               temp['type'] = 'data'
+              // console.log(this.submissions, i, this.colNames[j].id)
+              
               temp['data'] = this.submissions[i]['displayData']['data'][this.colNames[j].id]
               // temp['data'] = this.submissions[i]['displayData']['data'][this.colNames[j].id]
             } else if(this.colNames[j].type == 'selection') {
@@ -172,7 +173,7 @@ export default {
       }
     },
     createFile(){
-      this.creatingFileLoading = true
+      // this.creatingFileLoading = true
       axios({
         method: 'post',
         url: 'https://www-3.mach.kit.edu/api/getFormSubmissions.php',
@@ -203,221 +204,222 @@ export default {
 
 <style lang="scss" scoped>
 .row-item {
+  padding: 3px 5px;
   position: relative;
   display: flex;
   align-items: center;
 }
-  #submissions {
+#submissions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#form-submissions {
+  width:100%;
+  overflow-x: scroll;
+  background: #eee;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#form-submissions-header {
+  display: grid;
+  width: 100%;
+  margin-bottom: 5px;
+  grid-template-columns: 1fr auto 1fr;
+  > * {
+    display: flex;
+    align-items: center;
+    align-content: center;
+  }
+  > .header-title {
+    font-size: 20px;
+    font-weight: 500;
+    > span {
+      text-decoration: underline;
+    }
+  }
+
+}
+
+
+#create-file {
+  display: flex;
+  flex-direction: row;
+  border: 1px solid #2c3e50;
+  border-radius: 2px;
+  background-color: #e0e0e0;
+  margin: 0.5px;
+  padding: 1.5px;
+  width: 170px;
+  > * {
     width: 100%;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
+    flex-direction: row;
   }
-  #form-submissions {
-    width: 100%;
-    background: #eee;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  &:hover {
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8);
+    cursor: pointer;
   }
-  #form-submissions-header {
-    display: grid;
+  &:active {
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8), 0 0 0 1px black;
+  }
+  > img {
+    height: 20px;
+    margin: auto;
+  }      
+}
+#file-create-loading {
+  width: 100%;
+  text-align: center;
+}
+#file-download {
+  border: 1px solid #2c3e50;
+  border-radius: 2px;
+  background-color: #e0e0e0;
+  margin: 0.5px;
+  padding: 1.5px;
+  width: 160px;
+  text-align: center;
+  &:hover {
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8);
+    cursor: pointer;
+  }
+  &:active {
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8), 0 0 0 1px black;
+  }
+  > button {
     width: 100%;
-    margin-bottom: 5px;
-    grid-template-columns: 1fr auto 1fr;
-    > * {
-      display: flex;
-      align-items: center;
-      align-content: center;
-    }
-    > .header-title {
-      font-size: 20px;
-      font-weight: 500;
-      > span {
-        text-decoration: underline;
-      }
-    }
+    display: contents;
+    color: #2c3e50;
+    font-size: 16px;
+  }
+}
+
+#form-submissions-body {
+  width:100%;
+  
+  display: grid;
+  row-gap: 4px;
+  grid-auto-rows: auto;
+}
+
+.column {
+  display: contents;
+}
+.row {
+  display: contents;
+  > * {
+    border-top: 1px solid #2c3e50;
+    margin: 3px 0;
+  }
+  
+  > :first-child {
+    border-top: none;
 
   }
-  #create-file {
-    display: flex;
-    flex-direction: row;
-    border: 1px solid #2c3e50;
+  > :first-child::before {
+      position: absolute;
+      content: "";
+      padding-left: 3px;
+      border-top: 1px solid #2c3e50;
+      top: 0;
+  }
+  > :first-child::after {
+      position: absolute;
+      content: "";
+      padding-left: calc(100% - 42px);
+      border-top: 1px solid #2c3e50;
+      top: 0;
+      right: 0;
+  }    
+}
+.flag {
+  position: absolute;
+  top: 0;
+  > svg {
+    width: 20px;
+    height: 20px;
+  }
+  transform: translateY(-48%);
+  &:hover {
+    cursor: help;
+  }
+}
+.flag-placeholder{
+  position: absolute;
+  top: 0;    
+  border-bottom: 1px solid #2c3e50;
+  width: 16px;
+}
+.replies {
+  font-size: 14px;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  display: flex;
+  flex-direction: row;
+  position: absolute;
+  top: 0;
+  left: 16px;
+  transform: translateY(-50%);
+  > svg {
+    width: 16px;
+    height: 16px;
+  }    
+}
+
+.replies-placeholder{
+  position: absolute;
+  top: 0;
+  left: 13px; 
+  border-bottom: 1px solid #2c3e50;
+  width: 4px;
+  &.no-replies {
+    width: 29px;
+  }
+}
+
+.form-item-options {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  > .option {
+    box-sizing: border-box;
     border-radius: 2px;
     background-color: #e0e0e0;
+    width: 100%;      
+    display: flex;
     margin: 0.5px;
     padding: 1.5px;
-    width: 170px;
-    > * {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: row;
+    &.disabled {
+      filter: grayscale(100%);
+      opacity: 0.2;
     }
     &:hover {
-      box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8);
-      cursor: pointer;
+      &:not(.disabled) {
+        box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8);
+        cursor: pointer;
+      }
+
     }
     &:active {
-      box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8), 0 0 0 1px black;
+      &:not(.disabled) {
+        box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8), 0 0 0 1px black;
+      }
     }
     > img {
       height: 20px;
       margin: auto;
-    }      
-  }
-  #file-create-loading {
-    width: 100%;
-    text-align: center;
-  }
-  #file-download {
-    border: 1px solid #2c3e50;
-    border-radius: 2px;
-    background-color: #e0e0e0;
-    margin: 0.5px;
-    padding: 1.5px;
-    width: 160px;
-    text-align: center;
-    &:hover {
-      box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8);
-      cursor: pointer;
     }
-    &:active {
-      box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8), 0 0 0 1px black;
-    }
-    > button {
-      width: 100%;
-      display: contents;
-      color: #2c3e50;
-      font-size: 16px;
-    }   
-  }
-  #form-submissions-body {
-    width: 100%;
-    display: grid;
-    // grid-gap: 4px;
-    row-gap: 4px;
-    grid-auto-rows: auto;
-  }
 
-  .column {
-    display: contents;
   }
-  .row {
-    display: contents;
-    > * {
-      border-top: 1px solid #2c3e50;
-      border-bottom: 1px solid #2c3e50;
-      
-    }
-    
-    > :first-child {
-      border-left: 1px solid #2c3e50;
-      border-radius: 2px 0 0 2px;
-      border-top: none;
-      // border-top: 1px solid #2c3e50;
-    }
-    > :first-child::before {
-        position: absolute;
-        content: "";
-        padding-left: 3px;
-        border-top: 1px solid #2c3e50;
-        border-radius: 2px 0 0 0;
-        top: 0;
-    }
-    > :first-child::after {
-        position: absolute;
-        content: "";
-        padding-left: calc(100% - 42px);
-        border-top: 1px solid #2c3e50;
-        top: 0;
-        right: 0;
-    }    
-    > :last-child {
-      border-right: 1px solid #2c3e50;
-      border-radius: 0 2px 2px 0;
-    }
-  }
-  .flag {
-    position: absolute;
-    top: 0;
-    > svg {
-      width: 16px;
-      height: 16px;
-    }
-    transform: translateY(-48%);
-  }
-  .flag-placeholder{
-    position: absolute;
-    top: 0;    
-    border-bottom: 1px solid #2c3e50;
-    width: 16px;
-  }
-  .replies {
-    font-size: 14px;
-    justify-content: center;
-    align-items: center;
-    width: 24px;
-    display: flex;
-    flex-direction: row;
-    position: absolute;
-    top: 0;
-    left: 16px;
-    transform: translateY(-50%);
-    > svg {
-      width: 16px;
-      height: 16px;
-    }    
-  }
-
-  .replies-placeholder{
-    position: absolute;
-    top: 0;
-    left: 13px; 
-    border-bottom: 1px solid #2c3e50;
-    width: 4px;
-    &.no-replies {
-      width: 29px;
-    }
-  }
-
-  .form-item-options {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    height: 100%;
-    width: 100%;
-    > .option {
-      box-sizing: border-box;
-      border-radius: 2px;
-      background-color: #e0e0e0;
-      width: 100%;      
-      display: flex;
-      margin: 0.5px;
-      padding: 1.5px;
-      &.disabled {
-        filter: grayscale(100%);
-        opacity: 0.2;
-      }
-      &:hover {
-        &:not(.disabled) {
-          box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8);
-          cursor: pointer;
-        }
-
-      }
-      &:active {
-        &:not(.disabled) {
-          box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8), 0 0 0 1px black;
-        }
-      }
-      > img {
-        height: 20px;
-        margin: auto;
-      }
-
-    }
-  }
+}
 </style>

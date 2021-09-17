@@ -1,5 +1,5 @@
 <template>
-  <div class="reply">
+  <form id="reply">
 
     <div class="select-submissions">
       <div v-for="selectedSubmissionId in selectedSubmissionIds" :key="selectedSubmissionId">
@@ -9,13 +9,18 @@
     <div class="reply-wrapper"></div>
 
     <section>
-      <label for="color-input">Reply Message</label>
-      <textarea id="color-input" v-model="replyMessage" rows="4" cols="50"/>
+      <label for="message-input">Reply Message</label>
+      <textarea id="message-input" name="replyMessage" v-model="replyMessage" rows="4" cols="50"/>
     </section>
 
-    <button class="kit-button" @click="submitReply()">Submit</button>
+    <section>
+      <label for="file-input">Attach File</label>
+      <input id="file-input" name="replyFile" type="file">
+    </section>
 
-  </div>
+    <button class="kit-button" @click.prevent="submitReply()">Submit</button>
+
+  </form>
 </template>
 
 <script>
@@ -33,12 +38,18 @@ export default {
   },
   methods: {
     submitReply() {
-
-      axios({
-        method: 'post',
-        url: 'https://www-3.mach.kit.edu/api/saveSubmissionReply.php',
-        data: {mode: 'insert', formId: this.formId, submissionIds: this.selectedSubmissionIds, message: this.replyMessage}
-      }).then(response => {
+      var formData = new FormData(document.getElementById("reply"))
+      formData.append('mode', 'insert')
+      formData.append('formId', this.formId)
+      formData.append('submissionIds', JSON.stringify(this.selectedSubmissionIds))
+      axios.post('https://www-3.mach.kit.edu/api/saveSubmissionReply.php',
+        formData,
+        {
+          headers: {
+              'Content-Type': 'multipart/form-data'
+          }           
+        }
+      ).then(response => {
         console.log(response.data)
       })
     }

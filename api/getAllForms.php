@@ -106,16 +106,19 @@ $dbPassword = "motor25";
 $dbSchema = new dbSchema($serverName, $user, $dbPassword, $dbName);
 
 // check if read/write ids for viewForm have already been fetched if not save fetched ids in session
-if(array_key_exists("viewForm", $_SESSION["user"]["rights"])) {
-  if(!array_key_exists("ids", $_SESSION["user"]["rights"]["viewForm"])){
-    $ids = $dbSchema->getUserIds($_SESSION["user"]["rights"]["viewForm"]);
-    $_SESSION["user"]["rights"]["viewForm"]["ids"]=$ids;
+if($_SESSION) {
+  if(array_key_exists("viewForm", $_SESSION["user"]["rights"])) {
+    if(!array_key_exists("ids", $_SESSION["user"]["rights"]["viewForm"])){
+      $ids = $dbSchema->getUserIds($_SESSION["user"]["rights"]["viewForm"]);
+      $_SESSION["user"]["rights"]["viewForm"]["ids"]=$ids;
+    } else {
+      $ids = $_SESSION["user"]["rights"]["viewForm"]["ids"];
+    }
   } else {
-    $ids = $_SESSION["user"]["rights"]["viewForm"]["ids"];
+    $ids = NULL;
   }
-} else {
-  $ids = NULL;
 }
+
 
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
   

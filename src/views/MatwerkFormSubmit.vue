@@ -3,34 +3,55 @@
     <div class="form-overview-header">
       <div id="tabs">
         <div id="tab-indicator" :style="tabIndicatorPosition"></div>
-        <div class="tab" :class="{active: activeTab==0}" @click="changeTab(0)">Submit Form</div>
-        <div class="tab" :class="{active: activeTab==1}" @click="changeTab(1)">Form Submissions</div>
-        <div class="tab" :class="{active: activeTab==2}" @click="changeTab(2)">Replies</div>
-        <div class="tab" :class="{active: activeTab==3}" @click="changeTab(3)">Flags</div>
-      </div>
+        <div class="tab" :class="{active: activeTab==0}" @click="changeTab(0)">Login</div>
+        <div class="tab" :class="{active: activeTab==1}" @click="changeTab(1)">
+          <template v-if="!preset">
+            Registration
+          </template>
+          <template v-else>
+            Update Registration
+          </template>          
+        </div>
+      </div>      
     </div>
     <div class="selected-tab-content">
-      <SubmitForm :replies="replies" :submissionId="submissionId" :preset="preset" :form="form" v-if="activeTab==0" ></SubmitForm>
-      <FormSubmissions :replies="replies" :selectedSubmissionIds="selectedSubmissionIds" :formName="form.metadata.formName" :elements="form.elements" :submissions="submissions" v-if="activeTab==1" @selected-submission-change="selectedSubmissionChange($event)" @delete-submission="deleteSubmission($event)" @edit-submission="passSubmissionData($event)"></FormSubmissions>
-      <Reply :formId="form.metadata.formId" :selectedSubmissionIds="selectedSubmissionIds"  v-if="activeTab==2" />
-      <FlagSubmission :selectedSubmissionIds="selectedSubmissionIds"  v-if="activeTab==3" />
+      
+      <div class="submission-unique-key" v-if="activeTab==0">
+        <h2>Anonymous Login Material Science and Engineering</h2>
+        <div class="anon-login-description">
+          To update your previous registration data and to access registration replies please enter your unique key.
+          The unique key was send via email when you first registered.
+        </div>        
+
+        <div class="anon-login-description">
+          If you have not already registered please do so <span class="redirect-span" @click="changeTab(1)">here</span>.
+        </div>
+
+        <section class="input-section">
+          <label for="unique-key-input">Enter submission key</label>
+          <input id="unique-key-input" type="text" v-model="anonSubmissionKey" @keyup.enter="getSubmission()">
+          <button class="kit-button" @click="getSubmission()">Submit</button>
+          <div class="not-found-error" v-if="submissionNotFound">registration not found</div>
+        </section>
+
+      </div>      
+      
+      <SubmitForm @form-submitted="activeTab=0" v-if="activeTab==1" replyFrom="Department of Mechanical Enigneering" :key="preset" :replies="replies" :submissionId="submissionId" :preset="preset" :form="form"></SubmitForm>
+    </div>
+    <div class="anon-form-submit-footer">
+      If you have any questions please contact the support under <a href="mailto: zk-aprf@mach.kit.edu">zk-aprf@mach.kit.edu</a> 
     </div>
   </div>
+
 </template>
 
 <script>
 import axios from "axios";
-import FormSubmissions from '../components/FormSubmissions.vue'
 import SubmitForm from '../components/SubmitForm.vue'
-import Reply from '../components/Reply.vue'
-import FlagSubmission from '../components/FlagSubmission.vue'
 export default {
-  name: 'DisplayForm',
+  name: 'MatwerkFormSubmit',
   components: {
-    FormSubmissions,
     SubmitForm,
-    Reply,
-    FlagSubmission,
   },
   data() {
     return {
@@ -43,6 +64,8 @@ export default {
       submissionId: null,
       selectedSubmissionIds: [],
       formId: null,
+      anonSubmissionKey: null,
+      submissionNotFound: false,
     }
   },
   computed: {
@@ -58,9 +81,11 @@ export default {
       this.formId = this.$route.params.id
     }
     this.getFormData(this.formId);
-    this.getSubmissions(this.formId);
   },
   methods: {
+    changeTab(tab) {
+      this.activeTab = tab      
+    },    
     selectedSubmissionChange(event) {
       if(event.type=='add') {
         this.selectedSubmissionIds.push(event.id)
@@ -69,9 +94,6 @@ export default {
         this.selectedSubmissionIds.splice(index, 1);
       }
       console.log(this.selectedSubmissionIds)
-    },
-    changeTab(tab) {
-      this.activeTab = tab      
     },
     passSubmissionData(event) {
       this.preset=true
@@ -89,19 +111,24 @@ export default {
         console.log(response.data)          
       })      
     },
-    getSubmissions(id) {
+    getSubmission() {
       axios({
         method: 'post',
         url: 'https://www-3.mach.kit.edu/api/getFormSubmissions.php',
-        data: {formId: id, mode: 'select'}
+        data: {formId: this.formId, mode: 'anon', anonSubmissionKey: this.anonSubmissionKey}
       }).then(response => {
         console.log(response.data)
         if(response.data.error == null) {
-          this.replies = response.data.formSubmissions.replies
           if(response.data.formSubmissions != null) {
-            this.submissions = response.data.formSubmissions.submissions;
+            this.submissionNotFound = false
+            this.replies = response.data.formSubmissions.replies
+            this.submissions = response.data.formSubmissions.submissions[0];
+            this.$store.commit('setFormSubmissionData', this.submissions)
+            this.preset = true
+            this.submissionId = this.submissions.formSubmissionId
+            this.activeTab = 1
           } else {
-            this.error=404
+            this.submissionNotFound = true
           }
         } else {
           this.$router.push({name: 'Home'})
@@ -134,6 +161,8 @@ export default {
 
 <style scoped lang="scss">
 .form-overview {
+  background-color: #f2f2f2;
+  padding: 0 0 10px 0;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -168,10 +197,70 @@ export default {
 }
 .selected-tab-content {
   width: 100%;
-  background-color: #f2f2f2;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  height: 100%;
+  // border: 1px solid red;
+}
+.submission-unique-key{
+  position: relative;
+  width: 100%;
+  max-width: 740px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+  > h2 {
+    margin: 10px auto;
+  }
+  > .anon-login-description {
+    align-self: start;
+    font-weight: bold;
+    margin: 10px 0 10px 0;
+  }
+}
+.input-section {
+  // border: 1px solid black;
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  > input {
+    user-select: auto !important;
+    display: block;
+    width: 100%;
+    height: 40px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    padding: 15px !important;
+  }
+  > label {
+    display: flex;
+    align-items: center;
+    text-align: start;
+    width: 100%;
+  }  
+}
+.redirect-span {
+  color: #00876c;
+  &:hover {
+    cursor: pointer;
+    color: #007755;
+  }
+  text-decoration: underline;
+}
+.not-found-error {
+  top: 28px;
+  transform: translateX(-105%);
+  position: absolute;
+  color: red;
+  // border: 1px solid green;
+}
+.anon-form-submit-footer {
+  width: 100%;
+  max-width: 740px;
+  font-size: 0.8em;
 }
 </style>

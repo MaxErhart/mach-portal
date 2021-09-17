@@ -1,5 +1,4 @@
 <?php
-
 include_once("D:\inetpub\MPortal\includes\dbFramework\main.php");
 include_once("D:\inetpub\MPortal\includes\userFramework\main.php");
 session_start();

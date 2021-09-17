@@ -96,13 +96,17 @@ if(!$oldData) {
       "files" => "JSON",
       "dateOfSubmission" => "date"
     );
-    $theses = $dbSchema->selectTable("form_submissions")->select("formSubmissionId", "userId", "dateOfSubmission", "data", "files")->orderBy("dateOfSubmission", "DESC")->get($_POST["limit"][1], $_POST["limit"][0], $colTypePairs);
+    $conditions = array(
+      "formId" => $formId
+    );    
+    $theses = $dbSchema->selectTable("form_submissions")->select("formSubmissionId", "userId", "dateOfSubmission", "data", "files")->conditions($conditions)->orderBy("dateOfSubmission", "DESC")->get($_POST["limit"][1], $_POST["limit"][0], $colTypePairs);
 
     if(count($theses) < $_POST["limit"][1]-$_POST["limit"][0]) {
       $offset = count($theses);
       $num = $offset;
       $oldData = true;    
     }
+    // print_r($theses);
     for($i=0;$i<count($theses); $i++) {
       $displayData["Ansp_Email"] = $theses[$i]["data"][$elementsDic["Ansp_Email"]];
       $displayData["Ansp_Name"] = $theses[$i]["data"][$elementsDic["Ansp_Name"]];

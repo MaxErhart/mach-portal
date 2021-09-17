@@ -134,6 +134,7 @@ export default {
       method: 'get',
       url: 'https://www-3.mach.kit.edu/api/editRights.php',
     }).then(response => {
+      console.log(response.data)
       if(response.data.error == null) {
         this.users = _.orderBy(response.data.users, 'lastname')
         this.groups = _.orderBy(response.data.groups, 'groupName')

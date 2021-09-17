@@ -14,10 +14,8 @@ $dbPassword = "motor25";
 
 $connection = new mysqli($serverName, $user, $dbPassword, $dbName);
 
-
-
 if($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['isLoggedIn'])) {
-// log in as guest
+  // log in as guest
   $_POST = json_decode(file_get_contents("php://input"), true);
   $username = $_POST['username'];
   $password = $_POST['password'];
@@ -42,7 +40,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['isLoggedIn'])) {
     }
   }
 } else if($_SERVER['REQUEST_METHOD'] === 'GET') {
-// check if shib logged in
+  // check if shib logged in
   $headerString = "";
   $first = true;
   foreach($_COOKIE as $key => $value) {
@@ -72,6 +70,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_SESSION['isLoggedIn'])) {
 
     $userObject = new user("webuser");
     $_SESSION["user"] = $userObject->userInformation();
+    // $_SESSION["isLoggedIn"]=true;
     echo json_encode(array('error' => "not logged in", "user" => $userObject->userInformation()));
     
   } else if(!isset($_SESSION['isLoggedIn']) || !$_SESSION['isLoggedIn']){

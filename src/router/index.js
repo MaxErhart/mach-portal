@@ -8,7 +8,10 @@ import Submission from '../views/Submission.vue'
 import Theses from '../views/Theses.vue'
 import Rights from '../views/Rights.vue'
 import Email from '../views/Email.vue'
-
+import AnonFormSubmit from '../views/AnonFormSubmit.vue'
+import MachFormSubmit from '../views/MachFormSubmit.vue'
+import MatwerkFormSubmit from '../views/MatwerkFormSubmit.vue'
+//import ListAnonForm from '../views/DisplayListAnonForm.vue'
 const routes = [
   {
     path: '/',
@@ -28,6 +31,11 @@ const routes = [
     name: 'Dashboard',
     component: Dashboard
   },
+//  {
+//    path: '/listanonform',
+//    name: 'ListAnonForm',
+//    component: DisplayAnonForm
+//  },
   {
     path: '/createform/:id?',
     name: 'CreateForm',
@@ -43,19 +51,37 @@ const routes = [
     name: 'AllForms',
     component: AllForms,
   },
+
+  {
+    path: '/anon/:id',
+    name: 'AnonFormSubmit',
+    component: AnonFormSubmit
+  },
+
+
+  {
+    path: '/mach_entrance_exam/',
+    meta: {
+      id: '70'
+    },
+    name: 'MachEntranceExam',
+    component: MachFormSubmit
+  },
+  {
+    path: '/matwerk_entrance_exam/',
+    meta: {
+      id: '74'
+    },
+    name: 'MatwerkEntranceExam',
+    component: MatwerkFormSubmit
+  },  
   {
     path: '/submissions/:id',
     component: Submission
   },   
   {
     path: '/form/:id/:submissionId?',
-    component: DisplayForm,
-    children: [
-      {
-        path: 'submissions/',
-        component: Submission
-      },
-    ]    
+    component: DisplayForm,   
   },
   {
     path: '/theses',

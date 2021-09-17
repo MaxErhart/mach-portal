@@ -10,17 +10,6 @@ class user {
   private $mail;
   private $userId;
   private $groupIds = array();
-  // private $userRights = array(
-  //   "theses" => array(
-  //     "read" => array(
-  //       // empty if everyone is allowed
-  //     ),
-  //     "write" => array(
-  //       "groups" => array("MACH-Portal-Admin"),
-  //       "users" => array()
-  //     ), 
-  //   ),
-  // );
   private $groupRights = array();
 
   function __construct($sessionVariables) {

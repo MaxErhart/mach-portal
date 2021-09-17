@@ -1,4 +1,9 @@
 <template>
+  <div class="replies" v-if="preset">
+    <div class="replies-body" v-for="reply in replies[submissionId]" :key="reply">
+      <DisplaySubmissionReply :reply="reply" :from="replyFrom"/>
+    </div>
+  </div>
   <div class="form-overview">
     <form id="form" v-if="form.metadata != null">
       <div id="form-header" >
@@ -11,7 +16,7 @@
       </div>
       <div id="form-footer">
         <div class="buttons" v-if="!submissionsLoading">
-          <button class="kit-button" v-if="!preset" @click.prevent="submitForm()">Senden</button>
+          <button class="kit-button" v-if="!preset" @click.prevent="submitForm()">Submit</button>
           <button class="kit-button" v-if="preset" @click.prevent="updateFormSubmission()">Update</button>
         </div>
         <div v-else>Loading...</div>  
@@ -19,7 +24,6 @@
     </form>
     <div v-else>Loading...</div>
   </div>
-
 </template>
 
 <script>
@@ -29,12 +33,18 @@ import FormHeaderElement from '../components/FormHeaderElement.vue'
 import FormSectionElement from '../components/FormSectionElement.vue'
 import FormFileUploadElement from '../components/FormFileUploadElement.vue'
 import FormSelectionElement from '../components/FormSelectionElement.vue'
+import DisplaySubmissionReply from '../components/DisplaySubmissionReply.vue'
 export default {
   name: 'DisplayForm',
   props: {
     form: Object,
+    replies: Object,
     preset: Boolean,
     submissionId: Number,
+    replyFrom: String,
+    anon: Boolean,
+    targetEmail: String,
+    anonFormId: String,
   },
   components: {
     FormInputElement,
@@ -42,6 +52,7 @@ export default {
     FormSectionElement,
     FormFileUploadElement,
     FormSelectionElement,
+    DisplaySubmissionReply,
   },
   data() {
     return {
@@ -77,6 +88,10 @@ export default {
       var formData = new FormData(document.getElementById("form"))
       formData.append('formId', this.form.metadata.formId)
       formData.append('mode', 'submit')
+      formData.append('anon', this.anon)
+      formData.append('targetEmail', this.targetEmail)
+      formData.append('formName', this.form.metadata.formName)
+      formData.append('anonFormId', this.anonFormId)
       axios.post( 'https://www-3.mach.kit.edu/api/submitForm.php',
         formData,
         {
@@ -89,6 +104,7 @@ export default {
         }
       ).then((response) => {
         this.submissionsLoading = false
+        this.$emit('form-submitted')
           console.log(response.data)
         }
       )   
@@ -126,6 +142,9 @@ export default {
   margin: 20px 0;
   padding: 5px;
 }
+.form-element {
+  margin: 6px 0;
+}
 #form-footer {
   padding: 5px;    
 }
@@ -134,5 +153,13 @@ export default {
   width: 100%;
   max-width: 860px;
   padding: 20px 10px;
+}
+.replies {
+  width: 100%;
+  max-width: 740px;
+  margin: 10px 0;
+}
+.replies-body {
+  widows: 100%;
 }
 </style>

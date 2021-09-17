@@ -1,7 +1,7 @@
 <template>
   <div class="section-element">
     <div class="item">
-      <component :is="tag" class="item-content">
+      <component :is="tag" class="item-content" :style="{'text-decoration': underline ? 'underline' : 'none', 'font-weight': bold ? 'bold' : 'normal'}">
         {{content}}
       </component>      
     </div>
@@ -16,7 +16,9 @@ export default {
     id: String,
     type: String,
     content: String,
-    tag: String,    
+    tag: String,
+    underline: Boolean,
+    bold: Boolean, 
   },
   data() {
     return {
@@ -31,13 +33,9 @@ export default {
     width: 100%;
     display: block;
     min-height: 1em;
-    text-align: start;
-    white-space: pre-line;
-    word-break: break-all;
   }
   .section-element {
-    position: relative;
     width: 100%;
-    float: left;
+    margin: 25px 0 0 0;
   }
 </style>

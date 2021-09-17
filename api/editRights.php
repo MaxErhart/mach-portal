@@ -45,6 +45,7 @@ if(array_key_exists("editRights", $_SESSION["user"]["rights"])) {
       } else if($_POST["mode"]=="delete") {
 
       } else if($_POST["mode"]=="cleanup") {
+        print_r("hi");
         $deleteCondition = array(
           "rightsTarget" => json_encode(array("users" => array(), "groups" => array()))
         );

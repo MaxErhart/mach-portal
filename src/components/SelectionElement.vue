@@ -31,13 +31,15 @@
 
       <section>
         <label for="num-options"></label>
-        <input type="number" name="num-option" v-model="numOptions" @change="updateElData()">
+        <input type="number" name="num-option" v-model="numOptions" min="1" @change="updateElData()">
       </section>   
 
-      <section v-for="index in parseInt(numOptions)" :key="index">
-        <label :for="index">Option {{index}}:</label>
-        <input type="text" :name="index" v-model="options[index-1]" @change="updateElData()">
-      </section>   
+      <template v-if="numOptions > 0">
+        <section v-for="index in parseInt(numOptions)" :key="index">
+          <label :for="index">Option {{index}}:</label>
+          <input type="text" :name="index" v-model="options[index-1]" @change="updateElData()">
+        </section>          
+      </template> 
 
     </div>
 

@@ -4,11 +4,80 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 
+class Condition extends dbSchema{  
+  const OPERATORS = array(
+    "AND",
+    "OR"
+  );
+  private string $type;
+  private string $table;
+  private string $column;
+  private array $vals;
+  public function __construct($type, $table, $column, $vals) {
+   
+    if(!in_array($type, self::OPERATORS)) {
+      throw new Exception("Operator not valid.");
+    }
+    $this->type = $type;
+    $this->table = $table;
+    $this->column = $column;
+    $this->vals = $vals;
+  }
+  public function __toString() {
+    if(sizeof($this->vals)>1) {
+      $conditionString = "`{$this->table}`.`{$this->column}` IN {$this->mysqlListFormat($this->vals)}";
+    } else {
+      $conditionString = "`{$this->table}`.`{$this->column}` = '{$this->vals[0]}'";
+    }
+     
+    return "{$this->type} ({$conditionString})";
+  }
+}
+
 class dbSchema {
+  
+  const MYSQLKEYWORDS = array(
+    "LAST_INSERT_ID()"
+  );
+  
   private $connection;
 
+
+
   public function __construct($dbAddress, $dbUser, $dbPassword, $dbName) {
+    /* Tell mysqli to throw an exception if an error occurs */
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);     
     $this->connection = new mysqli($dbAddress, $dbUser, $dbPassword, $dbName);
+  }
+
+  public static function connectLocal() {
+    return new dbSchema("localhost", "mach-portal", "motor25", "mach_portal");
+  }
+
+  public function mysqlListFormat($list, $type="VALUE") {
+    $mysqlList = "(";
+    $first = true;
+    foreach($list as $item) {
+      if(!in_array($item, self::MYSQLKEYWORDS)){
+        $item = $this->decorateMysqlItem($item, $type);
+      }
+      if($first) {
+        $first=false;
+        $mysqlList .= $item;
+      } else {
+        $mysqlList .= ",{$item}";
+      }
+    }
+    $mysqlList .= ")";
+    return $mysqlList;
+  }
+
+  function decorateMysqlItem($item, $type) {
+    if($type == "VALUE") {
+      return "'{$item}'";
+    } else if($type == "TABLE") {
+      return "`{$item}`";
+    }
   }
 
   function selectTable($tableName) {
@@ -21,6 +90,22 @@ class dbSchema {
   function getConnection() {
     return $this->connection;
   }
+
+  public function transaction($queries) {
+    $this->connection->begin_transaction();
+    try {
+      foreach($queries as $query) {
+        echo $query;
+        $this->connection->query($query);
+      }
+      $this->connection->commit();
+    } catch (mysqli_sql_exception $exception) {
+      $this->connection->rollback();
+      throw $exception;
+    }
+  }
+
+
 
   function getUserIds($rights) {
     if(in_array("all", $rights["write"]["users"])) {
@@ -150,21 +235,19 @@ class updateQuery {
   function __construct($keyValuePairs, $condition, $table, $connection) {
     $this->connection = $connection;
     $this->table = $table;
-    // print_r($keyValuePairs);
-    // print_r($condition);
     if(!empty($keyValuePairs) && !empty($condition)) {
       $query = "UPDATE `".$table."` SET";
       $first = true;
       foreach($keyValuePairs as $col => $val) {
         if($first) {
           $first = false;
-          if($val==NULL) {
+          if($val===NULL) {
             $query .= " `".$col."`=NULL";
           } else {
             $query .= " `".$col."`='".$val."'";
           }
         } else {
-          if($val==NULL) {
+          if($val===NULL) {
             $query .= ", `".$col."`=NULL";
           } else {
             $query .= ", `".$col."`='".$val."'";
@@ -212,7 +295,8 @@ class updateQuery {
     }   
   }
 
-  function commit() {
+  public function commit() {
+    // echo $this->query;
     if($result = $this->connection->query($this->query)) {
       return array("error" => NULL);
     } else {
@@ -575,7 +659,6 @@ class selectQuery {
   }
 
   function getAll($colTypePairs=NULL) {
-  	// echo $this->query;
     $queryReturnVals = array();
     $once = NULL;
     if($result = $this->connection->query($this->query)) {

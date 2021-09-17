@@ -1,18 +1,18 @@
 <template>
   <div id="main" :style="{'grid-template-columns': windowWidth>750 ? '200px auto' : '64px auto'}">
     <div id="main-nav" :style="{'padding': styles.mainNavPadding, 'width': (windowWidth>750 ? 200 : 64) + 'px'}">
-      <div id="active-indicator" v-if="windowWidth>750" :style="{top: (currentActiveRouteIndex + 0.5)*navItemHeight - 3  + 'px', padding: styles.mainNavPadding}">
+      <div id="active-indicator" v-if="windowWidth>750 && routes.length >0" :style="{top: (currentActiveRouteIndex + 0.5)*navItemHeight - 3  + 'px', padding: styles.mainNavPadding}">
         <svg>
           <circle cx="3" cy="3" r="3" stroke="black" stroke-width="0" />
         </svg> 
       </div>
       <MainNavItem @click="changePage(route, index)" :showText="windowWidth>750" v-for="(route, index) in routes" :route="route.route" :key="route" :text="route.name" :isActive="currentActiveRouteIndex == index" :path="route.icon"/>
-      <div class="main-nav-login" v-if="!isSignedIn" @click="changeLoginFormActive(true)" :style="{'width': windowWidth>750 ? '75%': '64px'}">
+      <div class="main-nav-login" v-if="!isSignedIn" @click="changeLoginFormActive(true)" :style="{'width': windowWidth>750 ? null: '64px'}">
         <img src="@/assets/signIn.svg" alt="Sign In">
-        <span class="button-span" v-if="windowWidth>750">Sign In</span>        
+        <span class="button-span" v-if="windowWidth>750">Sign In Mach-Portal</span>        
       </div>
       <template v-if="isSignedIn">
-        <div class="main-nav-login" @click="logout()" :style="{'width': windowWidth>750 ? '75%': '64px'}">
+        <div class="main-nav-login" @click="logout()" :style="{'width': windowWidth>750 ? null: '64px'}">
           <img src="@/assets/signOut.svg" alt="Sign Out">
           <span class="button-span" v-if="windowWidth>750">Sign Out</span>
         </div>        
@@ -53,7 +53,6 @@ export default {
       currentActiveRouteIndex: 0,
       isSignedIn: false,
       user: null,
-      webuserTopics: ["home", "about", "theses", "dashboard"],
     }
   },
   created() {
@@ -72,11 +71,11 @@ export default {
 
     routes() {
       if(this.user) {
+        console.log(this.$store.getters.getRoutes.filter(i => i.topic in this.user.rights))
         return this.$store.getters.getRoutes.filter(i => i.topic in this.user.rights);
       } else {
-        return this.$store.getters.getRoutes.filter(i => this.webuserTopics.includes(i.topic));
+        return []
       }
-      
     },
     navItemHeight() {
       return this.$store.getters.getNavItemMainHeight;
@@ -152,6 +151,7 @@ body {
 }
 
 .kit-button {
+  margin: 5px 0 5px 0;
   box-shadow: none;
   border: none;
   display: block;
@@ -171,7 +171,13 @@ body {
   color: #2c3e50;
 }
 h1 {
-  // color: #00876c;
+  color: #00876c;
+  border-bottom: 1px solid #ddd;
+  display: inline-block;
+  padding-bottom: 10px;
+}
+h2 {
+  color: #00876c;
   border-bottom: 1px solid #ddd;
   display: inline-block;
   padding-bottom: 10px;
@@ -204,7 +210,7 @@ h1 {
   cursor: pointer;
   display: flex;
   height: 32px;
-  width: 75%;
+  width: 90%;
   border-radius: 0px;
   justify-content: center;
   align-items: center;
@@ -212,6 +218,10 @@ h1 {
   color: white;
   &:hover {
     background-color: #007755;
+  }
+  > img {
+    width: 35px;
+    margin: 0px -6px 0 -6px;
   }
 }
 
@@ -236,7 +246,8 @@ h1 {
 }
 
 #main-body {
-  width: 100%;
+  min-width: 100%;
+  // overflow-x: scroll;
   // background-color: rgba(0, 119, 85, 0.1);
   background-color: #b2dbd2;
   // background-color: #00876c;
@@ -246,7 +257,7 @@ h1 {
   align-items: flex-start;
 }
 .button-span{
-  margin-left:8px;
+  margin-left:2px;
 }
 
 

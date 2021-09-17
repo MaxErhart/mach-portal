@@ -11,12 +11,47 @@ function getSubmissionReplies($dbSchema, $data) {
   $conditions = array(
     "formId" =>$data["formId"]
   );
-  $submissionReplies = $dbSchema->selectTable("submission_replies")->select()->conditions($conditions)->getAll();
+  $colTypePairs = array(
+    "replyDate" => "date"
+  );
+  $submissionReplies = $dbSchema->selectTable("submission_replies")->innerJoin("userId", "users", "userId", array("firstname", "lastname", "mail", "userId"))->select("replyMessage", "replyDate", "submissionReplyId", "formId", "formSubmissionId", "attachedFilePath")->conditions($conditions)->orderBy("replyDate", "DESC")->getAll($colTypePairs);
   $result = array();
   foreach($submissionReplies as $reply) {
     $result[$reply["formSubmissionId"]][] = $reply;
   }
   return $result;
+}
+function getAnonSubmission($dbSchema, $data) {
+  $result = array();
+
+  $result["replies"] = getSubmissionReplies($dbSchema, $data);
+  $formData = array();
+  $colTypePairs = array(
+    "data" => "JSON",
+    "files" => "JSON",
+    "dateOfSubmission" => "date",
+    "formName" => "once"
+  );
+  $conditions = array(
+    "formId" => $data["formId"],
+    "anonSubmissionKey" => $data["anonSubmissionKey"],
+  );
+  $formData = $dbSchema->selectTable("form_submissions")->innerJoin("userId", "users", "userId", array("firstname", "lastname", "mail", "userId"))->innerJoin("formId", "forms", "formId", array("formName"))->select("formSubmissionId", "data", "dateOfSubmission", "files", "submission_flag", "flag_hover_text")->conditions($conditions)->getAll($colTypePairs);  
+  if($formData!=NULL) {
+    $result["formName"] = $formData[0];
+    $result["submissions"] = $formData[1];
+    $conditions = array(
+      "elementId" => array_merge(array_keys($result["submissions"][0]["data"]), array_keys($result["submissions"][0]["files"]))
+    );
+    $colTypePairs = array(
+      "data" => "JSON"
+    );
+    $result["elements"] = $dbSchema->selectTable("form_elements")->select("component", "data", "position", "elementId")->orConditions($conditions)->getAll($colTypePairs);    
+    return $result;
+  } else {
+    return NULL;
+  }
+  
 }
 
 function getFormSubmissions($dbSchema, $ids, $data) {
@@ -30,7 +65,7 @@ function getFormSubmissions($dbSchema, $ids, $data) {
     "files" => "JSON",
     "dateOfSubmission" => "date",
     "formName" => "once"
-  );  
+  );
   if($ids["read"] == "all") {
     $conditions = array(
       "formId" => $formId
@@ -51,14 +86,13 @@ function getFormSubmissions($dbSchema, $ids, $data) {
           }
           array_push($result["submissions"], array("displayData" => $submissions[$i], "notDisplayData" => $notDisplayData));
         }
-        // print_r($result["submissions"]);
         $conditions = array(
           "elementId" => array_merge(array_keys($result["submissions"][0]["displayData"]["data"]), array_keys($result["submissions"][0]["displayData"]["files"]))
         );
         $colTypePairs = array(
           "data" => "JSON"
         );
-        $result["elements"] = $dbSchema->selectTable("form_elements")->select("component", "data", "position", "elementId")->orConditions($conditions)->getAll($colTypePairs);        
+        $result["elements"] = $dbSchema->selectTable("form_elements")->select("component", "data", "position", "elementId")->orConditions($conditions)->getAll($colTypePairs);       
         return $result;
       } else {
         return NULL;
@@ -79,7 +113,7 @@ function getFormSubmissions($dbSchema, $ids, $data) {
       if($submissions != NULL) {
         $result["submissions"] = array();
         for($i=0;$i<count($submissions); $i++) {
-          // print_r($submissions[$i]);
+
           if(in_array($submissions[$i]["userId"], $ids["write"])) {
             $notDisplayData["write"] = true;
           } else {
@@ -148,7 +182,7 @@ function formatForExcel($data) {
   $submissions = $data["submissions"];
   $elements = $data["elements"];
   $formName = $data["formName"];
-  // print_r($elements);
+
   $result = array();
   foreach($submissions as $submission) {
     $row = array();
@@ -169,16 +203,27 @@ function formatForExcel($data) {
     }
     array_push($result, $row);
   }
-  // print_r($result);
   return array("data" => $result, "formName" => $formName);
 }
 
-function excelExport($filename, $data) {
-  $filename = $filename."_".date("d_m_y").".xls";
-  $filepath = "D:\inetpub\MPortal\dfiles\submissions\\".$filename;  
+
+function excelExport($formname, $data, $formId) {
+  
+  $filepath = "D:\inetpub\MPortal\dfiles\submissions\\";  
   $string = tabDelimited($data);
-  file_put_contents($filepath, $string);
-  return $filename;
+  // echo mb_detect_encoding($string);
+  // $string = iconv("ISO-8859","UTF-8", $string);
+  // $string = utf8_encode($string);
+  $tmpName = "";
+  $uniqId = substr(md5(uniqid(rand(), true)), 0, 6);
+  if(isValidWindowsFilename($formname)) {
+    $tmpName = $formId."_".$formname."_".date("d_m_y")."__".$uniqId.".xls";
+    file_put_contents($filepath.$tmpName, $string);
+  } else {
+    $tmpName = $formId."_"."invalild_filename_".date("d_m_y")."__".$uniqId.".xls";
+    file_put_contents($filepath.$tmpName, $string);
+  }  
+  return $tmpName;
 }
 
 // initiate new database connection
@@ -189,25 +234,31 @@ $dbPassword = "motor25";
 $dbSchema = new dbSchema($serverName, $user, $dbPassword, $dbName);
 
 // check if read/write ids for viewForm have already been fetched if not save fetched ids in session
-if(array_key_exists("submissions", $_SESSION["user"]["rights"])) {
-  if(!array_key_exists("ids", $_SESSION["user"]["rights"]["submissions"])){
-    $ids = $dbSchema->getUserIds($_SESSION["user"]["rights"]["submissions"]);
-    $_SESSION["user"]["rights"]["submissions"]["ids"]=$ids;
-  } else {
-    $ids = $_SESSION["user"]["rights"]["submissions"]["ids"];
-  }
-} else {
-  $ids = NULL;
-}
-
+// if($_SESSION) {
+//   if(array_key_exists("submissions", $_SESSION["user"]["rights"])) {
+//     if(!array_key_exists("ids", $_SESSION["user"]["rights"]["submissions"])){
+//       $ids = $dbSchema->getUserIds($_SESSION["user"]["rights"]["submissions"]);
+//       $_SESSION["user"]["rights"]["submissions"]["ids"]=$ids;
+//     } else {
+//       $ids = $_SESSION["user"]["rights"]["submissions"]["ids"];
+//     }
+//   } else {
+//     $ids = NULL;
+//   }
+// }
+$ids = array(
+  "write"=>"all",
+  "read"=>"all"
+);
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
-  if(!isset($_SESSION['isLoggedIn'])) {
-    echo json_encode(array("error" => "not logged in"));
-  } else if($ids == NULL){
+  if($ids == NULL){
     echo json_encode(array("error" => "user has no rights"));
   } else {
     #get post request data
-    $_POST = json_decode(file_get_contents("php://input"), true);   
+    // echo "trst";
+    
+    $_POST = json_decode(file_get_contents("php://input"), true);
+    // echo $_POST["mode"];
     if($_POST["mode"]=="select") {
       echo json_encode(array("error" => NULL, "formSubmissions" => getFormSubmissions($dbSchema, $ids, $_POST)));
     } else if($_POST["mode"]=="delete") {
@@ -216,8 +267,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
       echo json_encode(array("error" => NULL, "formSubmission" => selectSubmission($dbSchema, $ids, $_POST["formSubmissionId"])));  
     } else if($_POST["mode"]=="createFile") {
       $formattedFormSubmissions = formatForExcel(getFormSubmissions($dbSchema, $ids, $_POST));
-      $filename = excelExport($formattedFormSubmissions["formName"], $formattedFormSubmissions["data"]);
+      $filename = excelExport($formattedFormSubmissions["formName"], $formattedFormSubmissions["data"], $_POST["formId"]);
       echo json_encode(array("error" => NULL, "filename" => $filename));      
+    } else if($_POST["mode"]=="anon") {
+      // echo "im here hi";
+      // $_SESSION["anonSubmissionKey"] = $_POST["anonSubmissionKey"];
+      echo json_encode(array("error" => NULL, "formSubmissions" => getAnonSubmission($dbSchema, $_POST)));
     }
     
   }
