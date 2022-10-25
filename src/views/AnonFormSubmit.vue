@@ -47,7 +47,7 @@
           <div class="anon-login-description">
             Bitte geben Sie Ihre Emailadresse ein, um sich zu registrieren.
             An diese Emailadresse wird ihr persönlicher Registrierungscode gesendet.
-            Falls Sie sich bereit registriert haben, können Sie Ihre Daten <span class="redirect-span" @click="changeTab(1)">hier</span> abrufen.
+            Falls Sie sich bereits registriert haben, können Sie Ihre Daten <span class="redirect-span" @click="changeTab(1)">hier</span> abrufen.
           </div>                    
           <section class="input-section">
             <label for="email-key-input">Emailadresse</label>
@@ -55,7 +55,7 @@
             <button class="kit-button" @click="emailStep = false">Absenden</button>
           </section>          
         </div>
-        <SubmitForm @form-submitted="reset()" v-if="activeTab==0 && !emailStep" replyFrom="Department of Mechanical Enigneering" :anonFormId="anonFormId" :anon="true" :targetEmail="targetEmail" :key="preset" :replies="replies" :submissionId="submissionId" :preset="preset" :form="form"></SubmitForm>
+        <SubmitForm @form-submitted="reset()" :anonSubmissionKey="anonSubmissionKey" v-if="activeTab==0 && !emailStep" replyFrom="Department of Mechanical Enigneering" :anonFormId="anonFormId" :anon="true" :targetEmail="targetEmail" :key="preset" :replies="replies" :submissionId="submissionId" :preset="preset" :form="form"></SubmitForm>
 
       </div>
     </div>

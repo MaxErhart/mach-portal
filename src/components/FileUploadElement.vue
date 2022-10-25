@@ -14,8 +14,6 @@
           <span><img :src="require(`@/assets/upload.svg`)"></span>
           <span>Upload File</span>
       </label>
-
-
     </div>
 
     <div class="edit-element-window" v-if="editable">

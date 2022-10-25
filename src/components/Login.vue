@@ -1,87 +1,87 @@
 <template>
-  <div id="login">
-    <div id="login-overlay" v-if="loginFormActive && !isSignedIn" @click.self="changeLoginFormActive(false)">
-      <div id="login-body">
-        <section id="tabs">
-          <button class="tab" @click="sitchTab('shib')" :class="{active: activeTab=='shib'}">
-            Sign In with KIT Account
-          </button>
-          <button class="tab" @click="sitchTab('guest')" :class="{active: activeTab=='guest'}">
-            Sign In as Guest
-          </button>
-        </section>
+    <div id="login">
+        <div id="login-overlay" v-if="loginFormActive && !isSignedIn" @click.self="changeLoginFormActive(false)">
+            <div id="login-body">
+                <section id="tabs">
+                    <button class="tab" @click="changeTab('shib')" :class="{active: activeTab=='shib'}">
+                        Sign In with KIT Account
+                    </button>
+                    <button class="tab" @click="changeTab('guest')" :class="{active: activeTab=='guest'}">
+                        Sign In as Guest
+                    </button>
+                </section>
 
-        <section id="tab-content">
-          <div class="content" id="shib-sign-in" v-if="activeTab =='shib'">
-            <label for="shib-sign-in-button">Sign in with KIT Account</label>
-            <button class="kit-button" id="shib-sign-in-button" @click="shibLogin()">Sign In</button>
-          </div>
+                <section id="tab-content">
+                    <div class="content" id="shib-sign-in" v-if="activeTab =='shib'">
+                        <label for="shib-sign-in-button">Sign in with KIT Account</label>
+                        <button class="kit-button" id="shib-sign-in-button" @click="shibLogin()">Sign In</button>
+                    </div>
 
-          <div class="content" id="guest-sign-in" v-if="activeTab =='guest'">
-            <section>
-              <label for="username">Username</label>
-              <input v-model="username" @keyup.enter="$refs.loginPwInput.focus()" spellcheck="false" id="username" name="username" type="text" placeholder=" " autocomplete="username" required>
-            </section>
+                    <div class="content" id="guest-sign-in" v-if="activeTab =='guest'">
+                        <section>
+                            <label for="username">Username</label>
+                            <input v-model="username" @keyup.enter="$refs.loginPwInput.focus()" spellcheck="false" id="username" name="username" type="text" placeholder=" " autocomplete="username" required>
+                        </section>
 
-            <section>        
-              <label for="current-password">Password</label>
-              <input v-model="password" @keyup.enter="login(username, password)" ref="loginPwInput" id="current-password" name="current-password" type="password" autocomplete="current-password" aria-describedby="password-constraints" required>
-            </section>
+                        <section>        
+                            <label for="current-password">Password</label>
+                            <input v-model="password" @keyup.enter="login(username, password)" ref="loginPwInput" id="current-password" name="current-password" type="password" autocomplete="current-password" aria-describedby="password-constraints" required>
+                        </section>
 
-            <button class="kit-button" id="sign-in" ref="loginSubmitButton" @click="login(username, password)">Sign in</button>          
-          </div>
-        </section>
+                        <button class="kit-button" id="sign-in" ref="loginSubmitButton" @click="login(username, password)">Sign in</button>          
+                    </div>
+                </section>
 
 
-      </div>
+            </div>
+        </div>
     </div>
-  </div>
 </template>
 
 <script>
 import axios from "axios";
 export default {
-  name: 'Login',
-  props: {
-    isSignedIn: Boolean,
-  },
-  data() {
-    return {
-      username: null,
-      password: null,
-      activeTab: 'shib',
-    }
-  },
-
-  computed: {
-    loginFormActive: function() {
-      return this.$store.getters.getLoginForm;
+    name: 'Login',
+    props: {
+        isSignedIn: Boolean,
     },
-  },
-  methods: {
-    changeLoginFormActive(isActive){
-      this.$store.commit('changeLoginFormActive', isActive);
-    },
-    login(username, password){
-      this.$refs.loginSubmitButton.focus();
-			axios({
-				method: 'post',
-				url: 'https://www-3.mach.kit.edu/api/login.php',
-				data: {username: username, password: password},
-			}).then((response)=>{
-        if(response.data.success) {
-          this.$store.commit('login');
+    data() {
+        return {
+        username: null,
+        password: null,
+        activeTab: 'shib',
         }
+    },
 
-      })
+    computed: {
+        loginFormActive: function() {
+          return this.$store.getters.getLoginForm;
+        },
     },
-    shibLogin() {
-      window.location.href = "https://www-3.mach.kit.edu/Shibboleth.sso/Login?target=https://www-3.mach.kit.edu/dist/#";
-    },
-    sitchTab(tabClicked) {
-      this.activeTab = tabClicked
-    },        
-  }
+    methods: {
+        changeLoginFormActive(isActive){
+            this.$store.commit('changeLoginFormActive', isActive);
+        },
+        login(username, password){
+        this.$refs.loginSubmitButton.focus();
+            axios({
+                method: 'post',
+                url: 'https://www-3.mach.kit.edu/api/login.php',
+                data: {username: username, password: password},
+            }).then((response)=>{
+                if(response.data.success) {
+                this.$store.commit('login');
+            }
+
+        })
+        },
+        shibLogin() {
+            window.location.href = "https://www-3.mach.kit.edu/Shibboleth.sso/Login?target=https://www-3.mach.kit.edu/dist/#";
+        },
+        changeTab(tabClicked) {
+            this.activeTab = tabClicked
+        },        
+    }
 }
 </script>
 
@@ -94,6 +94,7 @@ export default {
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 1;
   background-color: rgba(0,0,0, 0.5);
 }
 label {
@@ -119,7 +120,6 @@ input {
   font-size: 18px;
   padding: 10px;
   width: 100%;
-  // width: calc(100% - 20px); /* full width minus padding */
 }
 input[type=text]:not(:focus):invalid,
 input[type=password]:not(:focus):invalid {

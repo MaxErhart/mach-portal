@@ -17,7 +17,7 @@
 
 <script>
 export default {
-  name: 'InputeElement',
+  name: 'FormSelectionElement',
   props: {
     preset: Boolean,
     elementId: String,

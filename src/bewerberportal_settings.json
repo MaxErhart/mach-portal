@@ -1,0 +1,16 @@
+{
+  "valid_application_numbers": [
+    {
+      "year": 2022,
+      "regex": "^690\\d{4}$",
+      "message": "Application number must start with the digits 690 and has a length of 7 digits."
+    }
+  ],
+  "valid_applicant_numbers": [
+    {
+      "year": 2022,
+      "regex": "^5\\d{6}$",
+      "message": "Applicant number must start with the digit 5 and has a length of 7 digits."
+    }
+  ] 
+}

@@ -1,8 +1,8 @@
 <template>
   <div class="nav-item-main" :class="{active: isActive}" :style="{'height': height+'px'}">
-    <router-link :to="route">
+    <router-link :to="{name: route[0]}">
       <div class="nav-item-link-icon" v-if="path!=''">
-        <svg viewBox="0 0 24 24">
+        <svg width="24" height="24">
           <path :d="path"/>
         </svg>
       </div>
@@ -15,7 +15,7 @@
 export default {
   name: 'MainNavItem',
   props: {
-    route: String,
+    route: Object,
     path: String,
     isActive: Boolean,
     text: String,
@@ -26,6 +26,8 @@ export default {
       return this.$store.getters.getNavItemMainHeight;
     }
   },
+  methods: {
+  }
 }
 </script>
 
@@ -33,6 +35,8 @@ export default {
 <style scoped lang="scss">
   svg {
     fill: #2c3e50;
+    width: 24px;
+    height: 24px;
   }
   .nav-item-main {
     display: flex;
@@ -57,6 +61,7 @@ export default {
     &.active * {
       color: #00876c;
       fill: #00876c;
+      stroke: #00876c;
       background-color: rgb(243, 243, 243);
       transition: all 200ms ease;
     }

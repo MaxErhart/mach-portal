@@ -1,263 +1,319 @@
 <template>
-  <div id="main" :style="{'grid-template-columns': windowWidth>750 ? '200px auto' : '64px auto'}">
-    <div id="main-nav" :style="{'padding': styles.mainNavPadding, 'width': (windowWidth>750 ? 200 : 64) + 'px'}">
-      <div id="active-indicator" v-if="windowWidth>750 && routes.length >0" :style="{top: (currentActiveRouteIndex + 0.5)*navItemHeight - 3  + 'px', padding: styles.mainNavPadding}">
-        <svg>
-          <circle cx="3" cy="3" r="3" stroke="black" stroke-width="0" />
-        </svg> 
-      </div>
-      <MainNavItem @click="changePage(route, index)" :showText="windowWidth>750" v-for="(route, index) in routes" :route="route.route" :key="route" :text="route.name" :isActive="currentActiveRouteIndex == index" :path="route.icon"/>
-      <div class="main-nav-login" v-if="!isSignedIn" @click="changeLoginFormActive(true)" :style="{'width': windowWidth>750 ? null: '64px'}">
-        <img src="@/assets/signIn.svg" alt="Sign In">
-        <span class="button-span" v-if="windowWidth>750">Sign In Mach-Portal</span>        
-      </div>
-      <template v-if="isSignedIn">
-        <div class="main-nav-login" @click="logout()" :style="{'width': windowWidth>750 ? null: '64px'}">
-          <img src="@/assets/signOut.svg" alt="Sign Out">
-          <span class="button-span" v-if="windowWidth>750">Sign Out</span>
-        </div>        
-        <div id="main-nav-user" >
-          <div id="user-icon">
-            <img src="@/assets/user.svg">
-          </div>
-          <div id="user-name" v-if="windowWidth>750">{{user.fname}} {{user.lname}}</div>
-        </div>
-      </template>
-
-    </div>
-    <div id="main-body">
+  <div id="main" v-if="authenticationFinished">
+    <div id="full-screen" v-if="isLoginRoute">
       <router-view/>
     </div>
-    <Login :isSignedIn="isSignedIn"/>
+    <template v-else>
+      <div id="top-navigation-app" :style="topNavigationDynamicStyle">
+        <IconButton @buttonClicked="toggleSideNavigation()" id="toggle-side-navigation-buttion-app" :noHover="toggleSideNavigationButton.noHover" :icon="toggleSideNavigationButton.icon" :text="toggleSideNavigationButton.text" :width="toggleSideNavigationButton.width" :height="toggleSideNavigationButton.height" />
+        <UserOptionsMenu id="user-option-menu" :user="user" @logout="logout()"/>
+      </div>
+      
+      <div id="top-banners" :style="topBannersDynamicStyle">
+        <div class="banner" v-for="(banner, index) in banners" :key="banner" :style="bannerDynamicStyle(banner)">
+          <span class="banner-text"  v-html="banner.text"></span>
+          <IconButton :border="true" class="banner-close-icon" @buttonClicked="closeBanner(index)" :noHover="true" icon="closeX" :text="null" :width="14" :height="14" />
+        </div>
+      </div>
+
+      <div id="side-navigation-app" :style="sideNavigationDynamicStyle">
+        <MainNavItem v-for="navItem in filterNavItems(navigationItems)" :key="navItem" :active="isNavItemActive(navItem)" :icon="navItem.icon" :text="navItem.text" :route="navItem.route" :height="navItem.height" :width="navItem.width"/>
+      </div>
+      <div id="content-app" :style="contentDynamicStyle" ref="contentApp">
+        <router-view :key="userFetched" :user="user" @userInfoChange="user=$event"/>
+      </div>
+    </template>
+
+
   </div>
 </template>
 
-
 <script>
-import MainNavItem from '@/components/MainNavItem.vue'
-import Login from '@/components/Login.vue'
+// import axios from "axios";
+import IconButton from '@/components/IconButton.vue'
+import MainNavItem from '@/components/MainNavItemTEMP.vue'
+import UserOptionsMenu from '@/components/user/UserOptionsMenu.vue'
 import axios from "axios";
-
 export default {
   name: 'App',
   components: {
+    IconButton,
     MainNavItem,
-    Login
+    UserOptionsMenu,
   },
   data() {
     return {
-      styles: {mainNavPadding: '10px 0 10px 0'},
-      windowWidth: window.innerWidth,
-      username: '',
-      password: '',
-      currentActiveRouteIndex: 0,
-      isSignedIn: false,
+      isMounted: false,
+      innerWidth: 0,
+
       user: null,
+      apps: null,
+      userFetched: false,
+      authenticationFinished: false,
+
+      toggleSideNavigationButton: {icon: 'threeHorizontalBars', width: 24, height: 24, text: '', noHover: true},
+      sideNavigationOn: true,
+      sideNavigationOptions: {width: 180, transitionTime: 300, top:38, color: {r:255, g:255, b:255}, padding: 16},
+      contentOptions: {padding: {top: 14, right: 14, bottom: 0, left: 14}},
+      navigationItems: [
+        {name: 'Home', icon: 'home', text: 'Home', route: 'Home', height: 24, width: 24, public: true},
+        {name: 'Forms', icon: 'forms', text: 'Forms', route: 'Forms', height: 24, width: 24 , public: false},
+        {name: 'Create Form', icon: 'createforms', text: 'Create Form', route: 'CreateForms', height: 24, width: 24, public: false},
+        {name: 'Permissions', icon: 'cogwheel', text: 'Permissions', route: 'Permissions', height: 24, width: 24, public: false},
+      ],
+      topBannerOptions: {height: 38},
+      banners: []
     }
   },
   created() {
-    this.setup()
-  },
-  mounted() {
-    window.addEventListener('resize', this.onResize);
-    if(localStorage.isLoggedIn) {
-      this.$store.commit('login');
-    }
+    window.addEventListener("resize", this.windowResized);
+    this.innerWidth=window.innerWidth
   },
   computed: {
-    currentRoute() {
-      return this.$store.getters.getCurrentRoute;
+    isLoginRoute() {
+      if(this.$route.name=='Login') {
+        return true
+      }
+      return false
     },
-
-    routes() {
-      if(this.user) {
-        console.log(this.$store.getters.getRoutes.filter(i => i.topic in this.user.rights))
-        return this.$store.getters.getRoutes.filter(i => i.topic in this.user.rights);
-      } else {
-        return []
+    contentDynamicStyle() {
+      var paddingRight = 0
+      var paddingLeft = 0
+      if(this.innerWidth>460) {
+        paddingRight = this.contentOptions.padding.right
+        paddingLeft = this.contentOptions.padding.left
+      }
+      return {
+        'top': `${this.sideNavigationOptions.top + this.banners.length*this.topBannerOptions.height}px`,
+        'padding': `${this.contentOptions.padding.top}px ${paddingRight}px ${this.contentOptions.padding.bottom}px ${paddingLeft}px`,
+        'left': this.sideNavigationOn ? `${this.sideNavigationOptions.width}px` : 0,
+        'min-width': this.sideNavigationOn ? `calc(100vw - ${this.sideNavigationOptions.width}px - ${this.yScrollBarCorrection}px)` : `calc(100vw - ${this.yScrollBarCorrection}px)`,
+        // 'width': '100%',
+        'min-height': `calc(100vh - ${this.sideNavigationOptions.top + this.xScrollBarCorrection + this.contentOptions.padding.top + this.banners.length*this.topBannerOptions.height}px`,
       }
     },
-    navItemHeight() {
-      return this.$store.getters.getNavItemMainHeight;
-    },
-    loginFormActive() {
-      return this.$store.getters.getLoginForm;
-    },
-    userInformation() {
-      return this.$store.getters.getUserInformation
-    }
-  },
-  watch: {
-    currentRoute(newRoute, oldRoute) {
-      if(newRoute != oldRoute) {
-        this.currentActiveRouteIndex = this.routes.indexOf(newRoute)
+    topBannersDynamicStyle() {
+      return {
+        'top': `${this.sideNavigationOptions.top}px`,
       }
-    }
+    },
+    topNavigationDynamicStyle() {
+      return {
+        'height': `${this.sideNavigationOptions.top}px`,
+        'background-color': `rgb(${this.sideNavigationOptions.color.r},${this.sideNavigationOptions.color.g},${this.sideNavigationOptions.color.b})`
+      }
+    },
+    sideNavigationDynamicStyle() {
+      return {
+        'top': `${this.sideNavigationOptions.top + this.banners.length*this.topBannerOptions.height}px`,
+        'width': this.sideNavigationOn ? `${this.sideNavigationOptions.width}px` : 0,
+        // 'transition': `width ${this.sideNavigationOptions.transitionTime}ms ease-in`,
+        'height': `calc(100vh - ${this.sideNavigationOptions.top}px - ${2*this.sideNavigationOptions.padding + this.banners.length*this.topBannerOptions.height}px)`,
+        'background-color': `rgb(${this.sideNavigationOptions.color.r},${this.sideNavigationOptions.color.g},${this.sideNavigationOptions.color.b})`,
+        'padding': `${this.sideNavigationOptions.padding}px 0`,
+        
+      }
+    },
+    xScrollBarCorrection() {
+      if(!this.isMounted) {
+        return 0
+      }
+      // return this.$refs.contentApp.getBoundingClientRect().width>window.innerWidth ? 17 : 0
+      return 0
+    },
+    yScrollBarCorrection() {
+      if(!this.isMounted) {
+        return 0
+      }
+      // return this.$refs.contentApp.getBoundingClientRect().height>window.innerHeight ? 17 : 0
+      return 0
+    },
   },
   methods: {
-    setup() {
+    closeBanner(index) {
+      this.banners.splice(index, 1)
+    },
+    bannerDynamicStyle(banner) {
+      return {
+        'height': `${this.topBannerOptions.height}px`,
+        'background-color': banner.backgroundColor,
+        'color': banner.color,
+      }
+    },
+    createTopBanners(user) {
+      if(!user) {
+        return
+      }
+      if(user.address_street && user.address_postalcode && user.address_city && user.address_country && user.private_email) {
+        return
+      }
+      var banner = {}
+      // banner['backgroundColor'] = 'rgb(251 213 213)'
+      banner['backgroundColor'] = 'rgb(188 240 218)'
+      
+      // banner['color'] = 'rgb(155 28 28)'
+      banner['color'] = 'rgb(3 84 63)'
+      
+      banner['duration'] = -1
+      banner['text'] = 'Please fill out all user information in your <a href="https://www-3.mach.kit.edu/dist/#/profile">profile settings</>.'
+      this.banners.push(banner)
+    },
+    windowResized() {
+      this.innerWidth=window.innerWidth
+    },
+    filterNavItems(navItems) {
+      return navItems.filter(navItem=>{
+        if(navItem.public) {
+          return true
+        }
+
+        if(this.user && this.user.rightsOnApps && this.user.rightsOnApps.map(app=>app.name).includes(navItem.name)) {
+          return true
+        }
+        return false
+      })
+    },
+    logout() {
+      this.user=null
+      this.$router.push({name: 'Home'})
+      const url = this.$store.getters.getApiAuthUrl+'/logout'
+      const shibLogout = 'https://www-3.mach.kit.edu/Shibboleth.sso/Logout'
       axios({
         method: 'get',
-        url: 'https://www-3.mach.kit.edu/api/login.php'
-      }).then(response => {
+        url: url
+      }).then(response=>{
+        this.userFetched = false
+        this.$store.commit('setUserFetched', false)
         console.log(response.data)
-        if(response.data.error==null) {
-          localStorage.isSignedIn = true
-          this.isSignedIn = true
-          this.user = response.data.user
-          localStorage.user = JSON.stringify(response.data.user)
-        } else {
-          localStorage.isSignedIn = false
-          this.isSignedIn = false
-          this.user = response.data.user
-          localStorage.user = JSON.stringify(response.data.user)
-        }
+        localStorage.clear()
+        // window.location.href = "https://www-3.mach.kit.edu/Shibboleth.sso/Logout"
       })
-     
-    },
-    onResize(){
-      this.windowWidth = window.innerWidth;
-    },
-    changePage(route, index) {
-      this.currentActiveRouteIndex = index
-      this.$store.commit('setCurrentRoute', route);
-    },
-    logout(){
-      this.$router.push({name: 'Home'})
-      localStorage.isSignedIn = false    
-			axios({
-				method: 'post',
-				url: 'https://www-3.mach.kit.edu/api/logout.php',
-			})
-    },
-    changeLoginFormActive(isActive){
-      this.$store.commit('changeLoginFormActive', isActive);
-    },
-  }
-}
+      axios({
+        method: 'get',
+        url: shibLogout
+      }).then(response=>{
+        console.log(response.data)
+      }) 
 
+    },
+    isNavItemActive(navItem) {
+      if(this.$route.name==navItem.route) {
+        return true
+      }
+      return false
+    },
+    toggleSideNavigation() {
+      this.sideNavigationOn = !this.sideNavigationOn
+    },
+    getUserAppInfo() {
+      var url = this.$store.getters.getApiAuthUrl+'/login'
+      if(window.location.host.startsWith('localhost')) {
+        url = this.$store.getters.getApiUrl+'/login'
+      }
+      axios({
+        method: 'get',
+        url: url,
+      }).then(response=>{
+        console.log(response.data)
+        this.authenticationFinished = true
+        this.user=response.data
+        this.userFetched = true
+        this.$store.commit('setUserFetched', true)
+        this.isMounted=true
+        this.createTopBanners(this.user)
+      }).catch(error=>{
+        console.log(error)
+        this.authenticationFinished = true
+        this.isMounted=true
+        this.userFetched = true
+        this.$store.commit('setUserFetched', true)
+        this.createTopBanners(this.user)
+      })
+      return this.user
+    }
+  },
+  mounted() {
+    this.getUserAppInfo()
+  },
+
+}
 </script>
 
-
 <style lang="scss">
-
-body {
-  margin: 0;
-  overflow-x: hidden;
-}
-
-*, :after, :before {
-  box-sizing: border-box;
-}
-
-.kit-button {
-  margin: 5px 0 5px 0;
-  box-shadow: none;
-  border: none;
-  display: block;
-  cursor: pointer;
-  padding: 10px;
-  background-color: #00876c;
-  color: white;
-  &:hover {
-    background-color: #007755;
+#top-banners {
+  position: fixed;
+  width: 100%;
+  z-index: 11;
+  background-color: white;
+  > .banner {
+    display: grid;
+    grid-template-columns: 5% 90% 5%;
+    > .banner-text {
+      grid-column-start: 2;
+      justify-self: center;
+      align-self: center;
+    }
+    > .banner-close-icon {
+      align-self: flex-start;
+      justify-self: flex-end;
+      fill:#2c3e50;
+      stroke:#2c3e50;
+      padding: 2px;
+      margin: 2px;
+      &:hover {
+        cursor: pointer;
+      }
+    }
   }
 }
-
+*,*:before,*:after {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: 0;
+}
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  // font-family: Helvetica, Arial, sans-serif;
+  font-family: "Roboto","Arial",sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
 }
-h1 {
-  color: #00876c;
-  border-bottom: 1px solid #ddd;
-  display: inline-block;
-  padding-bottom: 10px;
-}
-h2 {
-  color: #00876c;
-  border-bottom: 1px solid #ddd;
-  display: inline-block;
-  padding-bottom: 10px;
-}
 #main {
-  display: grid;
-  grid-template-rows: auto;
+  position: relative;
 }
-
-#main-nav {
-  display: flex;
-  flex-direction: column;
-  position: -webkit-sticky;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  box-shadow: 2px 0 10px rgba(0,0,0,.1);
+#full-screen {
+  min-width: 100vw;
+  min-height: 100vh;
 }
-
-#active-indicator {
-  fill: #00876c;
-  position: absolute;
-  left: 8px;
-  pointer-events: none;
-  transition: all 200ms ease;
-}
-
-.main-nav-login {
-  margin: 5px auto;
-  cursor: pointer;
-  display: flex;
-  height: 32px;
-  width: 90%;
-  border-radius: 0px;
-  justify-content: center;
-  align-items: center;
-  background-color: #00876c;
-  color: white;
-  &:hover {
-    background-color: #007755;
-  }
-  > img {
-    width: 35px;
-    margin: 0px -6px 0 -6px;
-  }
-}
-
-#main-nav-user {
-  // border: 1px solid black;
-  margin-top: auto;
-  margin-bottom: 20%;
-  padding: 15px 10px;
-  font-size: 16px;
-  font-weight: 500;
-  color:#2c3e50;
+#top-navigation-app {
+  position: fixed;
   display: flex;
   flex-direction: row;
-  padding-left: 16px;
-  > #user-icon {
-    margin-right: 8px;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  z-index: 12;
+  > * {
+    margin: 0 14px;
   }
-  > #user-name {
-    display: flex;
-    align-items: center;
-  }
+}
+#toggle-side-navigation-buttion-app {
+  display: inline;
 }
 
-#main-body {
-  min-width: 100%;
-  // overflow-x: scroll;
-  // background-color: rgba(0, 119, 85, 0.1);
-  background-color: #b2dbd2;
-  // background-color: #00876c;
-  padding: 20px 20px 0 20px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+#side-navigation-app {
+  overflow: hidden;
+  position: fixed;
+  z-index: 1;
 }
-.button-span{
-  margin-left:2px;
+// #content-
+#content-app {
+  position: absolute;
+  display: inline-block;
+  box-shadow: inset 2px 2px 4px -2px rgba(0,0,0,0.2);
+  background-color: rgba(249, 249, 249, 1);
 }
 
 

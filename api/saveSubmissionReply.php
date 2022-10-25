@@ -8,15 +8,16 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 function saveSubmissionReply($dbSchema, $data) {
-  print_r($data);
   $submissionIds =  json_decode($data["submissionIds"]);
   $files = array();
   $defaultPath = "D:\inetpub\MPortal\dfiles\submissionReplyFiles\\";
   $baseUrl = "https://www-3.mach.kit.edu/dfiles/submissionReplyFiles/";
   $filename = "";
   foreach($_FILES as $id=>$file) {
-    $filename = $_SESSION["user"]["userId"]."_".$data["formId"]."_".uniqid()."_".$file["name"];
-    move_uploaded_file($file["tmp_name"], $defaultPath.$filename);
+    if($file["error"]==0) {
+      $filename = $_SESSION["user"]["userId"]."_".$data["formId"]."_".uniqid()."_".$file["name"];
+      move_uploaded_file($file["tmp_name"], $defaultPath.$filename);
+    }
   }
   foreach($submissionIds as $submissionId) {
     $keyValuePairs = array(
@@ -24,8 +25,10 @@ function saveSubmissionReply($dbSchema, $data) {
       "formSubmissionId" => $submissionId,
       "replyMessage" => $data["replyMessage"],
       "userId" => $_SESSION["user"]["userId"],
-      "attachedFilePath" => $baseUrl.$filename
     );
+    if($filename!=""){
+      $keyValuePairs["attachedFilePath"] = $baseUrl.$filename;
+    }
     $dbSchema->selectTable("submission_replies")->insert($keyValuePairs)->commit();
   }
   return true;

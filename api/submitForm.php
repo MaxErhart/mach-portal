@@ -52,7 +52,8 @@ function submitForm($dbSchema) {
   }
   
   $insertAttributes = array();
-  if($_POST["anon"]) {
+  $anon = json_decode($_POST["anon"]);
+  if($anon) {
     $insertAttributes = array(
       "formId" => $_POST["formId"],
       "userId" => $userId,
@@ -158,9 +159,10 @@ function updateSubmission($dbSchema) {
     "files" => json_encode($files, JSON_UNESCAPED_UNICODE)
   );
   $condition = array();
-  if($_SESSION["user"]["userId"] == "4") {
+  $anon = json_decode($_POST["anon"]);
+  if($anon) {
     $condition = array(
-      "anonSubmissionKey" => $_SESSION["anonSubmissionKey"]
+      "anonSubmissionKey" => $_POST["anonSubmissionKey"]
     );
   } else {
     $condition = array(
@@ -177,24 +179,14 @@ $user = "mach-portal";
 $dbPassword = "motor25";
 $dbSchema = new dbSchema($serverName, $user, $dbPassword, $dbName);
 
-// check if read/write ids for viewForm have already been fetched if not save fetched ids in session
-// if(array_key_exists("submissions", $_SESSION["user"]["rights"])) {
-//   if(!array_key_exists("ids", $_SESSION["user"]["rights"]["submissions"])){
-//     $ids = $dbSchema->getUserIds($_SESSION["user"]["rights"]["submissions"]);
-//     $_SESSION["user"]["rights"]["submissions"]["ids"]=$ids;
-//   } else {
-//     $ids = $_SESSION["user"]["rights"]["submissions"]["ids"];
-//   }
-// } else {
-//   $ids = NULL;
-// }
-
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
   if($_POST["mode"]=="submit") {
     echo json_encode(array("error" => NULL, "submissionId" => submitForm($dbSchema)));
   } else if($_POST["mode"]=="update") {
     updateSubmission($dbSchema);
-  }    
+  } else if($_POST["mode"]=="test") {
+    print_r($_POST);
+  }
 } else {
   if(!isset($_SESSION['isLoggedIn'])) {
     echo json_encode(array("error" => "not logged in"));

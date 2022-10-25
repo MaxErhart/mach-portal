@@ -1,7 +1,7 @@
 <template>
   <div class="input-element">
     <div class="item">
-      <label id="file-upload-label" :for="id">{{labelName}}
+      <label id="file-upload-label" :for="elementId">{{labelName}}
         <span class="required-span" v-if="required">*</span>
         <span class="tooltip-element" v-if="tooltip != ''">
           ?

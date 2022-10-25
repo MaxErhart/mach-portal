@@ -1,0 +1,19 @@
+Dear Applicant,
+
+This is an automatic message.
+
+You have recently applied for entrance examination {{degree}} via Mach-Portal.
+Link: <a href="https://www-3.mach.kit.edu/dist/#/bewerberportal">https://www-3.mach.kit.edu/dist/#/bewerberportal</a>
+
+Your registration has been noted.
+
+We will send you an e-mail if there is new information about the examination.
+
+
+
+If you have any questions please contact the support under <a href="mailto:zk-aprf@mach.kit.edu">zk-aprf@mach.kit.edu</a>
+
+Best regards,
+
+Admissions Committee
+KIT Department of Mechanical Engineering

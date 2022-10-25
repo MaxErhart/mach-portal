@@ -10,7 +10,7 @@
       </div>
     </div>
     <div class="selected-tab-content">
-      <SubmitForm :replies="replies" :submissionId="submissionId" :preset="preset" :form="form" v-if="activeTab==0" ></SubmitForm>
+      <SubmitForm :anon="false" :replies="replies" :submissionId="submissionId" :preset="preset" :form="form" v-if="activeTab==0" ></SubmitForm>
       <FormSubmissions :replies="replies" :selectedSubmissionIds="selectedSubmissionIds" :formName="form.metadata.formName" :elements="form.elements" :submissions="submissions" v-if="activeTab==1" @selected-submission-change="selectedSubmissionChange($event)" @delete-submission="deleteSubmission($event)" @edit-submission="passSubmissionData($event)"></FormSubmissions>
       <Reply :formId="form.metadata.formId" :selectedSubmissionIds="selectedSubmissionIds"  v-if="activeTab==2" />
       <FlagSubmission :selectedSubmissionIds="selectedSubmissionIds"  v-if="activeTab==3" />

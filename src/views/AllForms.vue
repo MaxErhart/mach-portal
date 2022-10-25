@@ -76,68 +76,68 @@
 <script>
 import axios from "axios";
 export default {
-  name: 'Forms',
-  components: {
-  },
-  data() {
-    return {
-      forms: null,
-      activeTab: 'AllForms'
+    name: 'Forms',
+    components: {
+    },
+    data() {
+        return {
+        forms: null,
+        activeTab: 'AllForms'
+        }
+    },
+    beforeCreate() {
+        axios({
+        method: 'get',
+        url: 'https://www-3.mach.kit.edu/api/getAllForms.php'
+        }).then(response => {
+        console.log(response.data)
+        if(response.data.error == null) {
+            this.forms = response.data.forms;
+        } else {
+            this.$router.push({name: 'Home'})
+        } 
+        })  
+    },
+    mounted() {
+        this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[5])
+    },
+    computed: {
+        myForms() {
+        //   if(this.forms != null) {
+        //     return this.forms.filter(el => el.displayData.userId == JSON.parse(localStorage.user).userId)
+        //   } else {
+        //     return null
+        //   }
+            return this.forms;
+        }
+    },
+    methods: {
+        redirect(id) {
+        this.$router.push({
+            path: `/form/${id}`
+        })
+        },
+        sitchTab(tabClicked) {
+        this.activeTab = tabClicked
+        },
+        deleteForm(formId) {
+        axios({
+            method: 'post',
+            url: 'https://www-3.mach.kit.edu/api/getAllForms.php',
+            data: {formId: formId, mode: 'delete'}
+        })       
+        },
+        editForm(formId) {
+        this.$router.push({
+            path: `/createform/${formId}`
+        })      
+        },
+        viewSubmissions(formId) {
+        this.$router.push({
+            path: `/submissions/${formId}`
+        })       
+        }
     }
-  },
-  beforeCreate() {
-    axios({
-      method: 'get',
-      url: 'https://www-3.mach.kit.edu/api/getAllForms.php'
-    }).then(response => {
-      console.log(response.data)
-      if(response.data.error == null) {
-        this.forms = response.data.forms;
-      } else {
-        this.$router.push({name: 'Home'})
-      } 
-    })  
-  },
-  mounted() {
-    this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[5])
-  },
-  computed: {
-    myForms() {
-      if(this.forms != null) {
-        return this.forms.filter(el => el.displayData.userId == JSON.parse(localStorage.user).userId)
-      } else {
-        return null
-      }
-      
-    }
-  },
-  methods: {
-    redirect(id) {
-      this.$router.push({
-        path: `/form/${id}`
-      })
-    },
-    sitchTab(tabClicked) {
-      this.activeTab = tabClicked
-    },
-    deleteForm(formId) {
-      axios({
-        method: 'post',
-        url: 'https://www-3.mach.kit.edu/api/getAllForms.php',
-        data: {formId: formId, mode: 'delete'}
-      })       
-    },
-    editForm(formId) {
-      this.$router.push({
-        path: `/createform/${formId}`
-      })      
-    },
-    viewSubmissions(formId) {
-      this.$router.push({
-        path: `/submissions/${formId}`
-      })       
-    }
-  }
 }
 </script>
 

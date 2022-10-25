@@ -1,5 +1,5 @@
 <template>
-  <div id="submissions">
+  <div id="submissions" @click="test()">
     <div id="form-submissions" v-if="submissions != null">
 
       <div id="form-submissions-header">
@@ -26,7 +26,7 @@
         
       </div>
       <div id="form-submissions-body" :style="gridStyle">
-        <div id="col-names" v-for="col in colNames" :key="col">
+        <div class="col-names" v-for="col in colNames" :key="col">
           <template v-for="(item,name) in col" :key="item">
             <template v-if="name == 'data'">{{item}}</template>
           </template>
@@ -48,7 +48,8 @@
               </svg>              
             </div>
             <div class="replies-placeholder" v-if="itemIndex==0" :class="{'no-replies': row.numReplies==0}"></div>
-            <a :href="'https://www-3.mach.kit.edu/dfiles/' + item.data" v-if="item.type=='file'">{{item.data.split("/").pop().split("_").pop()}}</a>
+            <!-- <a :href="'https://www-3.mach.kit.edu/dfiles/' + item.data" v-if="item.type=='file' && item.data">{{item.data.split("/").pop().split("_").pop()}}</a> -->
+            <a :href="item.path + item.data.split('/').pop()" v-if="item.type=='file' && item.data">{{item.data.split("_").pop()}}</a>
             
             <template v-else-if="item.type=='data'">{{item.data}}</template>
             
@@ -109,10 +110,14 @@ export default {
             if(this.colNames[j].type == 'file') {
               temp['type'] = 'file'
               temp['data'] = this.submissions[i]['displayData']['files'][this.colNames[j].id]
-              // temp['file'] = this.submissions[i]['displayData']['files'][this.colNames[j].id]
+
+              var el1 = this.elements.filter(obj => {
+                return obj.elementId == this.colNames[j].id
+              })[0]
+              temp['path'] = this.convertWebToPath(el1['data']['path'])                  
             } else if(this.colNames[j].type == 'input'){
               temp['type'] = 'data'
-              // console.log(this.submissions, i, this.colNames[j].id)
+              console.log(this.submissions, i, this.colNames[j].id)
               
               temp['data'] = this.submissions[i]['displayData']['data'][this.colNames[j].id]
               // temp['data'] = this.submissions[i]['displayData']['data'][this.colNames[j].id]
@@ -152,6 +157,8 @@ export default {
           temp['type'] = 'input'
         } else if(this.elements[i].component == 'SelectionElement'){
           temp['type'] = 'selection'
+        } else {
+          continue
         }
         temp['id'] = this.elements[i].elementId
         temp['data'] = this.elements[i].data.labelName
@@ -165,6 +172,16 @@ export default {
 
   },  
   methods: {
+    convertWebToPath(winPath) {
+      const defaultPath = "https://www-3.mach.kit.edu/dfiles/submissionReplyFiles"
+      var segments = winPath.split("\\")
+      segments.splice(0, 5)
+      segments = segments.join('/')
+      console.log(segments, defaultPath)
+      return defaultPath + segments + '/'
+    },
+    test() {
+    },
     updateSelectedSubmissions(event, id) {
       if(event.target.checked) {
         this.$emit('selected-submission-change', {type: 'add', id: id})
@@ -204,7 +221,7 @@ export default {
 
 <style lang="scss" scoped>
 .row-item {
-  padding: 3px 5px;
+  padding: 3px 16px;
   position: relative;
   display: flex;
   align-items: center;
@@ -220,7 +237,7 @@ export default {
   overflow-x: scroll;
   background: #eee;
   padding: 20px;
-  display: flex;
+  // display: flex;
   flex-direction: column;
   align-items: center;
 }
@@ -321,41 +338,44 @@ export default {
   
   > :first-child {
     border-top: none;
-
+    justify-content: center;
   }
   > :first-child::before {
-      position: absolute;
-      content: "";
-      padding-left: 3px;
-      border-top: 1px solid #2c3e50;
-      top: 0;
+    position: absolute;
+    content: "";
+    padding-left: 24px;
+    border-top: 1px solid #2c3e50;
+    top: 0;
+    left: 0;
   }
   > :first-child::after {
-      position: absolute;
-      content: "";
-      padding-left: calc(100% - 42px);
-      border-top: 1px solid #2c3e50;
-      top: 0;
-      right: 0;
+    position: absolute;
+    content: "";
+    padding-left: calc(100% - 51px);
+    border-top: 1px solid #2c3e50;
+    top: 0;
+    right: 0;
   }    
 }
 .flag {
   position: absolute;
   top: 0;
+  left: -5px;
+  transform: translateY(+18%);
   > svg {
     width: 20px;
     height: 20px;
   }
-  transform: translateY(-48%);
   &:hover {
     cursor: help;
   }
 }
 .flag-placeholder{
   position: absolute;
-  top: 0;    
+  top: 0;
+  left: 24px;
   border-bottom: 1px solid #2c3e50;
-  width: 16px;
+  width: 27px;
 }
 .replies {
   font-size: 14px;
@@ -366,7 +386,7 @@ export default {
   flex-direction: row;
   position: absolute;
   top: 0;
-  left: 16px;
+  left: 24px;
   transform: translateY(-50%);
   > svg {
     width: 16px;
@@ -421,5 +441,12 @@ export default {
     }
 
   }
+}
+.col-names {
+  display: flex;
+  padding: 0 16px;
+  width: max-content;
+  max-width: 260px;
+  align-items: center;
 }
 </style>

@@ -1,16 +1,16 @@
 <template>
-  <div class="element-body" :class="{'focus': isFocused, 'has-error': showError}" @click="test()">
+  <div class="element-body" :class="{'focus': isFocused, 'has-error': showError, 'has-tooltip':tooltip}" @click="test()">
     <label class="element-label" :class="{'focus': isFocused, 'has-value': value !='' && value !=null, 'has-error': showError, 'has-placeholder': placeholder!='' && placeholder != null}">
       {{labelName}} <span class="required-icon" v-if="required">*</span>
     </label>
     <input v-model="value" :name="elementId" :placeholder="placeholder" :type="inputType" class="element-input" :class="{'focus': isFocused, 'has-error': showError}" @focus="focus()" @blur="blur()" ref="elementInput">
-    <span class="element-error" :class="{'has-error': showError}">{{errorMessage}}</span>
+    <span class="tooltip-element">{{tooltip}}</span>
+    <span class="element-error" :class="{'has-error': showError, 'has-tooltip':tooltip}">{{errorMessage}}</span>
   </div>
 </template>
 
 <script>
-import {ERROR_TYPES, ERROR_MESSAGES, INPUT_TYPES, VALIDATION_REGEX} from '../validationSettings.js'
-
+import * as validationSettings from '../validationSettings.json'
 export default {
   name: 'InputeElement',
   props: {
@@ -22,15 +22,12 @@ export default {
     tooltip: String,
     placeholder: String,
     required: Boolean,
-    validationType: Number, 
+
+    
   },
   data() {
     return {
-      ERROR_TYPES,
-      ERROR_MESSAGES,
-
-      INPUT_TYPES,
-      VALIDATION_REGEX,
+      validationSettings,
       value: null,
       
 
@@ -45,40 +42,46 @@ export default {
   },
   computed: {
     error() {
-      if(this.requiredError()) {
-        return ERROR_TYPES.REQUIRED
-      } else if(this.valueError()) {
-        return ERROR_TYPES.VALUE
+      const error_types = this.validationSettings.default.error_types
+      const valid = this.validationSettings.default.valid
+      for (const key in error_types) {
+        if(this[key]()) {
+          return error_types[key]
+        }
+      }
+      return valid
+    },
+    hasError() {
+      const valid = this.validationSettings.default.valid      
+      if(this.error != valid) {
+        return true
       } else {
-        return ERROR_TYPES.VALID
+        return false
       }
     },
-    showError() {
-      if(this.deFocusedOnce && this.error!=ERROR_TYPES.VALID) {
+    showError() {     
+      if(this.deFocusedOnce && this.hasError) {
         return true
       } else {
         return false
       }
     },
     errorMessage() {
-      if(this.customErrorMessage) {
-        return this.customErrorMessage
-      } else {
-        return ERROR_MESSAGES[this.error]
-      }
+      return this.error.message
     }
   },
   methods: {
-    requiredError() {
+    required_error() {
       if(this.required && !this.value) {
         return true
       } else {
         return false
       }
     },
-    valueError() {
-      if(!VALIDATION_REGEX[this.validationType].test(this.value)) {
-        return true
+    value_error() {
+      if(this.value) {
+        const regex = new RegExp(this.validationSettings.default.input_types[this.inputType].regex)
+        return !regex.test(this.value)
       } else {
         return false
       }
@@ -93,8 +96,7 @@ export default {
       this.isFocused = false
     },
     test() {
-      // console.log(this.valueError())
-      // console.log(reg.test("\""))
+
     },   
   },
 }
@@ -135,6 +137,9 @@ export default {
         transition-property: border, opacity, transform;
       }      
     }
+    &.has-tooltip {
+      margin: 4px 12px 36px 12px;
+    }    
   }
   .element-label {
     position: absolute;
@@ -148,9 +153,9 @@ export default {
     
     color: rgba(0,0,0,.54);
     &.has-placeholder {
-      opacity: 0;
+      opacity: 1;
       font-size: 12px;
-      top: 10px;
+      top: 0px;
     }
     &.focus {
       color: #00876c;
@@ -168,6 +173,7 @@ export default {
     }    
   }
   .element-input {
+    // box-shadow: 0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12);    
     height: 32px;
     padding: 0;
     display: block;
@@ -190,7 +196,7 @@ export default {
     left: 0;
     opacity: 0;
     transform: translate3d(0,-8px,0);
-
+    pointer-events: none;
     height: 20px;
     position: absolute;
     bottom: -22px;
@@ -200,6 +206,22 @@ export default {
       color: #ff1744;
       opacity: 1;
       transform: translateZ(0);      
-    }  
+    }
+    &.has-tooltip {
+      bottom: -36px;
+    }     
   }
+.tooltip-element {
+  display: block!important;
+  left: 0;
+  opacity: 1;
+  transform: translate3d(0,-8px,0);
+  pointer-events: none;
+  height: 20px;
+  position: absolute;
+  bottom: -22px;
+  font-size: 12px;
+  transition: .3s cubic-bezier(.4,0,.2,1);
+  transform: translateZ(0);
+}  
 </style>

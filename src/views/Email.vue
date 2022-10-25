@@ -163,7 +163,7 @@ export default {
           }.bind(this)
         }
       ).then((response) => {
-          console.log(response.data)
+          console.log(response)
         }
       ) 
     },

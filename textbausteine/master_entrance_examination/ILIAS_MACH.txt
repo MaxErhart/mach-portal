@@ -1,0 +1,74 @@
+********************************English Version below
+
+Guten Tag, 
+
+die Masterzugangsprüfung für den Studiengang %DEGREE_DE% wird auf der Lern-Plattform ILIAS bereitgestellt. 
+
+Über diesen Link erstellen Sie Ihr "Lokales Gastkonto":
+https://ilias.studium.kit.edu/ilias.php?lang=de&target=wiki_1280161_Registrierungscode&client_id=produktiv&cmdClass=ilaccountregistrationgui&cmdNode=108:19&baseClass=ilStartUpGUI
+
+Code: %ILIAS%
+Benutzername: Mach-%BEWERBUNGSNUMMER%-%EMAIL_NO_DOMAIN%
+E-Mail-Adresse: %EMAIL% 
+
+Eine detaillierte Anleitung zur Registrierung finden Sie hier:
+https://ilias.studium.kit.edu/goto.php?target=wiki_1280161_Registrierungscode
+
+Bitte melden Sie sich nach der Registrierung im ILIAS-Kurs "Masterzugangsprüfung für den Studiengang Maschinenbau (Candidacy test for the Master's program in Mechanical Engineering)" an. Eine genaue Beschreibung des Prüfungsablaufs ist in diesem Ordner als PDF-Download verfügbar.
+
+Den ILIAS-Kurs finden Sie über diesen Link: 
+https://ilias.studium.kit.edu/goto.php?target=crs_1416247_rcode8k7mREmLXd&client_id=produktiv
+
+Eine genaue Beschreibung des Prüfungsablaufs ist in diesem Ordner als PDF-Download verfügbar.
+Für eine Teilnahme an der Klausur ist folgende Ausstattung erforderlich: 
+o	eigner PC oder Laptop
+o	zuverlässige Internetverbindung
+o	Browser
+
+Während der Prüfung können Sie schriftlich oder wenn gewünscht per Mikrofon Fragen stellen.
+Eine Kamera wird nicht benötigt.  
+
+Eine frühzeitige Anmeldung im ILIAS-Kurs erhöht die Chancen auf einen reibungsfreien Prüfungsablauf und wird erbeten. 
+
+Mit freundlichen Grüßen
+
+Zugangskommission für den Masterstudiengang %DEGREE_DE% 
+KIT-Fakultät für Maschinenbau
+
+******************************** English Version
+
+Hello,
+
+The entrance examination for the Master's program in %DEGREE_EN% will be held online using the ILIAS platform.
+
+To participate you need to register a "external user (without KIT account)" under the following URL:
+https://ilias.studium.kit.edu/ilias.php?lang=en&target=wiki_1280161_Registrierungscode&client_id=produktiv&cmdClass=ilaccountregistrationgui&cmdNode=108:19&baseClass=ilStartUpGUI
+Please use the following information for your registration:
+Code: %ILIAS%
+Username: Mach-%BEWERBUNGSNUMMER%-%EMAIL_NO_DOMAIN%
+Email: %EMAIL% 
+
+A detailed manual explaining the registration process can be found here:
+https://ilias.studium.kit.edu/goto.php?target=wiki_1280161_Registrierungscode&lang=en
+
+If you want to change the language of ILIAS to English, please click on your personal icon and select "Einstellungen".
+The interface language can be adjusted in the first option "Sprache".
+
+After the registration, please sign up for ILIAS-course "Masterzugangsprüfung für den Studiengang Maschinenbau (Candidacy test for the Master's program in Mechanical Engineering)".
+
+The ILIAS course is found under the following URL:
+https://ilias.studium.kit.edu/goto.php?target=crs_1416247_rcode8k7mREmLXd&client_id=produktiv
+
+Further details on the examination procedure are available as downloadable PDFs within the folder of the ILIAS course.
+
+To participate in the examination the following things are required
+o	computer
+o	stable internet connection
+o	web browser
+
+During the examination you can ask questions either by typing in the chat or using your microphone, a camera is not needed.
+Please register early to enable a smooth examination procedure.
+
+Yours sincerely,
+Zugangskommission für den Masterstudiengang %DEGREE_EN%
+KIT Department of Mechanical Engineering

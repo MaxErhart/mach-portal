@@ -65,13 +65,11 @@ export default {
       infiniteScrollLoading: false,
       oldNewDataOffset: 0,
       getOldData: false,
-      user: null,
     }
   },  
   mounted() {
     this.$store.commit('setCurrentRoute', this.$store.getters.getRoutes[1])
     this.changeTab(0);
-    this.user = JSON.parse(localStorage.user)
     document.addEventListener("scroll", ($event) => this.infiniteScroll($event));
   },
   computed: {
@@ -80,34 +78,11 @@ export default {
       return {transform: `translate(${xPos}px, 34px)`}
     },
     addThesisRights: function() {
-      if(this.user){
-        if(this.user.rights.theses) {
-          if(this.user.rights.theses.write.groups.length > 0 || this.user.rights.theses.write.users.length > 0) {
-            return true
-          } else {
-            return false
-          }
-        } else {
-          return false
-        }
-      } else {
-        return false
-      }
+        return true;
     },
     rowModRights: function() {
-      if(localStorage.isLoggedIn){
-        const attributes = JSON.parse(localStorage.userInformation)
-        if(attributes.memberOf) {
-          if(attributes.memberOf.includes('MACH-Portal-Admin')) {
-            return true
-          }
-        }
-        return false
-      } else {
-        return false
-      }
-      
-    }
+        return true;
+    },
 
   },
   methods: {

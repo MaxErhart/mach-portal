@@ -187,10 +187,14 @@ function formatForExcel($data) {
   foreach($submissions as $submission) {
     $row = array();
     foreach($submission["displayData"] as $key=>$val) {
-      if($key != "formSubmissionId" && $key != "userId" && $key != "files") {
+      if($key != "formSubmissionId" && $key != "userId" && $key != "files" && $key != "flag_hover_text" && $key != "submission_flag") {
         if($key == "data") {
           foreach($elements as $element) {
             if($element["component"] == "SelectionElement") {
+              if(!array_key_exists($element["elementId"], $val)) {
+                $row[$element["data"]["labelName"]] = "";
+                continue;
+              }
               $row[$element["data"]["labelName"]] = $element["data"]["options"][$val[$element["elementId"]]];
             } else if($element["component"] == "InputElement") {
               $row[$element["data"]["labelName"]] = $val[$element["elementId"]];
