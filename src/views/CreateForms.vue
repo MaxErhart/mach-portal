@@ -3,14 +3,9 @@
     <h1>Form</h1>
     <NavBar :tabs="navTabs" @reload="reload($event)"/>
     <div id="form-main-content">
-      <template v-if="awaitData">
-        Awaiting Data
-      </template>
-      <template v-else>
-        <IndexForms v-if="method=='index'" :data="forms" :method="method" @deleteEntry="deleteEntry($event)" :key="indexFormReload"/>
-        <StoreForm v-if="method=='store' || method=='update'" :tags="tags" :form="form" :key="storeFormReload"/>
-      </template>
-
+      <IndexForms @copyForm="copyForm($event)" :copyLoading="copyLoading" :deleteLoading="deleteLoading" :loading="awaitData" v-if="route=='CreateForms'" :data="forms" @uploadSubmissions="uploadSubmissions($event)" @editForm="editForm($event)" @deleteForm="deleteForm($event)" :key="indexFormReload"/>
+      <StoreForm :loading="awaitData" @createTag="createTag($event)" :key="storeFormReload" @storeForm="getForms()" @updateForm="updateForm($event)" v-if="route=='NewForm'" :tags="tags" :form="form" ref="store_form"/>
+      <UploadSubmissions v-if="route=='UploadSubmissions'" :form="form"/>
     </div>
   </div>
 </template>
@@ -19,13 +14,15 @@
 import NavBar from '@/components/NavBar.vue'
 import IndexForms from '@/components/forms/IndexForms.vue'
 import StoreForm from '@/components/forms/StoreForm.vue'
+import UploadSubmissions from '@/components/forms/UploadSubmissions.vue'
 import axios from "axios";
 export default {
   name: 'CreateForms',
   components: {
     NavBar,
     IndexForms,
-    StoreForm
+    StoreForm,
+    UploadSubmissions
   },
   data() {
     return {
@@ -35,32 +32,33 @@ export default {
       fetchedAllData: false,
       forms: [],
       tags: [],
-      navTabs: [
-        {text: 'List Forms', route: {name: 'CreateForms'}},
-        {text: 'New Form', route: {name: 'NewForm'}},
-      ],     
+      deleteLoading: false,
+      copyLoading: false,
     }
   },
   mounted() {
-    this.getTags()
-    if(this.method=='index') {
-      this.getForms();
-    } else if(this.method=='show' || this.method=='update') {
-      this.getForm(this.$route.params.id);
-    }    
+    this.getForms();
+    this.getTags();
   },
   watch: {
-    $route() {
-      if((this.method=='index' || this.method=='update') && !this.forms.filter(el=>{el.id==this.$route.params.id})) {
-        this.getForm(this.$route.params.id);
-      } else if(!this.fetchedAllForms && this.method=='index') {
-        this.getForms();
-      }
-    }
   },  
   computed: {
+    route() {
+      return this.$route.name
+    },
+    navTabs() {
+      var tabs = [
+        {id: 0, text: 'List Forms', route: {name: 'CreateForms'}},
+        {id: 1, text: 'New Form', route: {name: 'NewForm'}},
+      ]
+      if(this.route=='UploadSubmissions') {
+        tabs.push({id: 2, text: 'Upload', route: {name: 'UploadSubmissions'}})
+      }
+      return tabs
+    },
     form() {
       if(this.$route.params.id && this.forms.length>0) {
+        console.log(this.forms.filter(form=>form.id==this.$route.params.id)[0])
         return this.forms.filter(form=>form.id==this.$route.params.id)[0]
       } else {
         return null;
@@ -71,39 +69,59 @@ export default {
     },
     apiAuthUrl() {
         return this.$store.getters.getApiAuthUrl;
-    },    
-    method() {
-      if(this.$route.meta.new && this.$route.params.id) {
-        return 'update';
-      }
-      if(this.$route.meta.new) {
-        return 'store';
-      }
-      return 'index';
-    }    
+    },
   },
   methods: {
+    createTag(tag) {
+      const url = `${this.apiUrl}/tags`;
+      const formData = new FormData()
+      formData.append('name', tag.value)
+      axios({
+        method: 'post',
+        url: url,
+        data: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }).then(response=>{
+        this.tags.push(response.data);
+        console.log(this.tags,response.data)
+        this.$refs.store_form.$refs.tags.$refs.select.awaiting = false
+      }).catch(error=>{
+        console.log(error)
+        this.$refs.store_form.$refs.tags.$refs.select.awaiting = false
+      })
+    },
+    updateForm(form) {
+      this.forms = this.forms.map(f=>{
+        if(f.id==form.id) {
+          return form
+        }
+        return f
+      })
+    },
+    async copyForm(id) {
+      this.copyLoading = true
+      const {error} = await this.$store.dispatch('_forms', {method: 'copy', form_id:id})
+      console.log(error?.response)
+      this.copyLoading = false
+      if(!error) {
+        this.refreshForms()
+      }
+    },
+    async refreshForms() {
+      this.awaitData = true
+      const {forms} = await this.$store.dispatch('_forms', {method: 'get'})
+      this.forms = forms
+      console.log(forms)
+      this.awaitData = false
+    },
     reload(route) {
       if(route.name=='NewForm') {
         this.storeFormReload++;
       } else if(route.name=='CreateForms') {
         this.indexFormReload++;
       }
-    },    
-    getForm(id) {
-      this.awaitData = true;
-      const url = `${this.apiUrl}/forms/${id}`;
-      axios({
-        method: 'get',
-        url: url,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }).then(response=>{
-        console.log(response.data)
-        this.forms = this.forms.concat(response.data);
-        this.awaitData = false;
-      })      
     },
     getTags() {
       this.tags = []
@@ -117,39 +135,29 @@ export default {
       }).then(response=>{
         this.tags = this.tags.concat(response.data);
       })
-    },   
-    getForms() {
-      this.forms=[];
-      this.fetchedAllData = true;
-      this.awaitData = true;
-      const url = `${this.apiUrl}/forms`;
-      axios({
-        method: 'get',
-        url: url,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }).then(response=>{
-        console.log(response.data)
-        this.forms = this.forms.concat(response.data);
-        this.awaitData = false;
-      }).catch(error=>{
-        console.log(error.response)
-      })
     },
-    deleteEntry(event) {
-      const url = `${this.apiUrl}/forms/${event.id}`;
-      this.forms.splice(event.index, 1)
-      axios({
-        method: 'delete',
-        url: url,
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }).then(e=>{
-        console.log(e)
-      })    
-    },       
+    async getForms() {
+      this.$router.push({name:'CreateForms',params:{}})
+
+      this.awaitData = true
+      const {forms} = await this.$store.dispatch('_forms', {method: 'get'})
+      this.forms = forms
+      this.awaitData = false
+    },  
+    uploadSubmissions(id) {
+      this.$router.push({name: 'upload_submissions', params: {id: id}})
+      // this.$router.push({name: 'UploadSubmissions', params: {id: id}})
+    },
+    editForm(event) {
+      this.$router.push({name: 'NewForm', params: {id: event}})
+    },
+    async deleteForm(id) {
+      this.deleteLoading = true
+      const {forms,error} = await this.$store.dispatch('_forms', {method:'delete', form_id:id})
+      console.log(error?.response)
+      this.forms = forms
+      this.deleteLoading = false
+    },
   }
 }
 </script>
@@ -162,6 +170,7 @@ export default {
   align-items: center;
 }
 #form-main-content {
+  position: relative;
   background-color: #fff;
   width: 100%;
   box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;

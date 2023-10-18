@@ -2,10 +2,8 @@
   <div class="login">
     <h2>Login</h2>
     <form ref="form_login" @submit.prevent="login()">
-      <!-- <InputElement :data="inputElementData_firstName" name="first_name"/> -->
-      <!-- <InputElement :data="inputElementData_lastName" name="last_name"/> -->
-      <InputElement :data="inputElementData_email" name="email"/>
-      <InputElement :data="inputElementData_bewerbungsNummer" name="bewerbungs_nummer"/>
+      <InputElement label="Email" :required="true" type="email" autocomplete="email" name="Email" tooltip="KIT application email"/>
+      <InputElement label="Application Number" :required="true" name="Number" tooltip="7 digit number starting with 7"/>
       <Button :loading="buttonElementData_login.loading" :disabled="buttonElementData_login.disabled" :text="buttonElementData_login.text" />
     </form>
   </div>
@@ -24,10 +22,6 @@ export default {
   },
   data() {
     return {
-      inputElementData_bewerbungsNummer: {label: "Application Number", required: true, tooltip: null, type: "number"},
-      inputElementData_firstName: {label: "First Name", required: true, tooltip: null, type: "text"},
-      inputElementData_lastName: {label: "Last Name", required: true, tooltip: null, type: "text"},
-      inputElementData_email: {label: "Email", required: true, tooltip: null, type: "email", autocomplete: "email"},
       buttonElementData_login: {loading: false, disabled: false, text: "Login"},
     }
   },
@@ -39,9 +33,10 @@ export default {
   methods: {
     login() {
       const url = `${this.apiUrl}/bewerberportal/login`
-      var formData = new FormData(this.$refs.form_login);   
-
-
+      var formData = new FormData(this.$refs.form_login);
+      for (const pair of formData.entries()) {
+        console.log(`${pair[0]}, ${pair[1]}`);
+      }
       axios({
         method: 'post',
         url: url,
@@ -52,16 +47,10 @@ export default {
       }).then(response=>{
         var bewerber = response.data
         bewerber["loggedin"] = true
-
         this.$emit('loggedin', bewerber)
-        console.log(bewerber)
       }).catch(error=>{
-        // console.log(error.response.status==400)
-
-        // this.emitter.emit('showResponseMessage', {error: {status: 400, data: {message: "Application not found. The list of applications is updated every few days. Please try again later or contact the support."}}})    
-        this.emitter.emit('showResponseMessage', {error: error.response})    
-
-        console.log(error.response)
+        this.emitter.emit('showErrorMessage', {error: error,action:'Login'})    
+        console.log(error,error.response)
       })
     }
   }

@@ -1,7 +1,11 @@
 <template>
   <div class="nav-item-main" :class="{active: active}">
-    <router-link :to="{name: route}">
-      <component class="nav-item-link-icon" :is="src" :width="width" :height="height" />
+    <router-link :to="{name: route, params}">
+      <div class="icon-wrapper">
+        <component v-if="!ion" class="nav-item-link-icon" :is="src" :width="width" :height="height" />
+          <ion-icon v-else class="nav-item-link-icon" :name="icon"></ion-icon>
+
+      </div>
       <div class="nav-text">{{text}}</div>
     </router-link>
   </div>
@@ -18,6 +22,8 @@ export default {
     icon: String,
     width: Number,
     height: Number,
+    ion: Boolean,
+    params: Object,
   },
   data() {
     return {
@@ -45,7 +51,19 @@ svg {
   width: 24px;
   height: 24px;
 }
+.nav-text {
+  position: absolute;
+  left: 51px;
+  width: 129px;
+  font-size: 16px;
+  // z-index: -1;
+}
+.icon-wrapper {
+  background: #fff;
+}
 .nav-item-main {
+  position: relative;
+  overflow: hidden;
   height: 38px;
   &.active * {
     color: #00876c;
@@ -63,6 +81,9 @@ svg {
   }
   &:hover {
     background-color: #bfc8cc;
+    * {
+      background-color: #bfc8cc;
+    }
   }
 }
 a {
@@ -75,6 +96,10 @@ a {
   align-items: center;
 
   .nav-item-link-icon {
+    font-size: 24px;
+    position: relative;
+    background: #fff;
+    left: 0;
     margin: 0 14px 0 14px;
   }
 }

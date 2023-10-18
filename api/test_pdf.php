@@ -30,164 +30,110 @@ if(str_starts_with($zeichen, "WS")) {
 $next_exam_year = substr($zeichen, -2);
 $next_exam = "{$next_exam_month} {$next_exam_year}";
 
-$template = 'D:\inetpub\MPortal\pdf_templates\bescheide\Bescheid_Maske_ohne.pdf';
-$pdf = new Fpdi('P', 'pt', 'A4');
+$template = 'D:\inetpub\MPortal\pdf_templates\bescheide\Lehrv_F2 - Prof.pdf';
+// $pdf = new Fpdi('P', 'pt', 'A4');
+$pdf = new Fpdi();
 $pagecount = $pdf->setSourceFile($template);
 $tplIdx = $pdf->importPage(1);
-$pdf->AddPage();
+$pdf->AddPage("L");
 $pdf->useTemplate($tplIdx);
-$pdf->SetFont('Helvetica');
+// $pdf->SetFont('Helvetica');
+$pdf->SetFont('Arial');
 $pdf->SetFillColor(255, 255, 255);
 
-// APPLICANT INFO BOX
-$pdf->SetXY(64, 159); // set the position of the box
-$pdf->Cell(280, 80, '', 0, 0, "L", 1); // add the text, align to Center of cell
-$pdf->SetFontSize('10'); // set font size
 
-// ANREDE
-$pdf->SetXY(65.08, 165); // set the position of the box
-$pdf->Cell(0, 0, utf8_decode($anrede), 0, 0, "L", 1); // add the text, align to Center of cell
-//  NAME
-$pdf->SetXY(65.08, 178); // set the position of the box
-$pdf->Cell(0, 0, utf8_decode($name), 0, 0, "L", 1); // add the text, align to Center of cell
-//  EMAIL
-$pdf->SetXY(65.08, 191); // set the position of the box
-$pdf->Cell(0, 0, utf8_decode($email), 0, 0, "L", 1); // add the text, align to Center of cell
-// APPLICATION NUMBER
-$pdf->SetXY(65.08, 204); // set the position of the box
-$pdf->Cell(0, 0, "Bewerbungs-Nummer: {$bewerbungs_nummer}", 0, 0, "L", 1); // add the text, align to Center of cell
+// Institute 
+$pdf->SetXY(20.1, 20.1);
+$pdf->SetFontSize('12');
+// $pdf->SetTextColor(255,0,0);
+$pdf->Cell(80, 8, utf8_decode('Institut für'), 1, 0, "L", 1);
 
-// APPLICATION NUMBER
-$pdf->SetXY(65.08, 217); // set the position of the box
-$pdf->Cell(0, 0, "Geboren: {$geboren}", 0, 0, "L", 1); // add the text, align to Center of cell
+// Title
+$pdf->SetXY(80, 32.1);
+$pdf->SetFontSize('16');
+$pdf->SetFont('Arial', 'b');
+$pdf->Cell(140, 8, utf8_decode('Erfüllung der Lehrverpflichtungen für'), 1, 0, "L", 1);
+
+// Semester
+$pdf->SetXY(245.3, 20.1);
+$pdf->SetFontSize('16');
+$pdf->SetFont('Arial', 'b');
+$pdf->Cell(40, 8, utf8_decode('WS'), 1, 0, "L", 1);
 
 
+// Table rows
+function create_row($y, $pdf) {
+  $pdf->SetXY(20.8, $y);
+  $pdf->SetFontSize('12');
+  $pdf->SetFont('Arial');
+  $pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
+
+  $pdf->SetXY(35.8, $y);
+  $pdf->SetFontSize('12');
+  $pdf->SetFont('Arial');
+  $pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
+
+  $pdf->SetXY(46.8, $y);
+  $pdf->SetFontSize('12');
+  $pdf->SetFont('Arial');
+  $pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
+
+  $pdf->SetXY(125.8, $y);
+  $pdf->SetFontSize('12');
+  $pdf->SetFont('Arial');
+  $pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
+
+  $pdf->SetXY(190.8, $y);
+  $pdf->SetFontSize('12');
+  $pdf->SetFont('Arial');
+  $pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
+
+  $pdf->SetXY(203.1, $y);
+  $pdf->SetFontSize('12');
+  $pdf->SetFont('Arial');
+  $pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
+
+  $pdf->SetXY(220.8, $y);
+  $pdf->SetFontSize('12');
+  $pdf->SetFont('Arial');
+  $pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
+
+  $pdf->SetXY(235.8, $y);
+  $pdf->SetFontSize('12');
+  $pdf->SetFont('Arial');
+  $pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
+
+  $pdf->SetXY(249.1, $y);
+  $pdf->SetFontSize('12');
+  $pdf->SetFont('Arial');
+  $pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
+
+  $pdf->SetXY(264.1, $y);
+  $pdf->SetFontSize('12');
+  $pdf->SetFont('Arial');
+  $pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
+}
+
+create_row(90.1, $pdf);
+create_row(95.6, $pdf);
+create_row(101.1, $pdf);
+create_row(106.6, $pdf);
+create_row(106.6, $pdf);
+create_row(112.1, $pdf);
+create_row(117.6, $pdf);
+create_row(123.1, $pdf);
+create_row(128.6, $pdf);
+create_row(134.1, $pdf);
+create_row(139.6, $pdf);
+create_row(145.1, $pdf);
+create_row(150.6, $pdf);
+create_row(156.1, $pdf);
+
+$pdf->SetXY(235.8, 168);
+$pdf->SetFontSize('12');
+$pdf->SetFont('Arial');
+$pdf->Cell(15, 8, utf8_decode('Blank'), 0, 0, "L", 0);
 
 
-// HIDE TOP RIGHT
-$pdf->SetXY(374, 89); // set the position of the box
-$pdf->Cell(150, 135, '', 0, 0, "L", 1); // add the text, align to Center of cell
-
-// TOP RIGHT FAK
-// TOP RIGHT FAK
-$pdf->SetFont('Helvetica','B',8);
-// $pdf->SetXY(375.2, 95); // set the position of the box
-$pdf->SetXY(375.2, 83.8); // set the position of the box
-$pdf->MultiCell(177.5, 9.7, utf8_decode("KIT-Fakultät für Maschinenbau Zugangskommission für den {$degree}"), 0, "L", 0);
-
-// TOP RIGHT VORSITZ
-$pdf->SetFont('Helvetica','',8);
-$pdf->SetXY(375.2, 127.7); // set the position of the box
-$pdf->Cell(0, 0, "Vorsitz:  $vorsitz", 0, 0, "L", 1); // add the text, align to Center of cell
-
-// TOP RIGHT ADRESS
-$pdf->SetFont('Helvetica','',8);
-$pdf->SetXY(375.2, 144); // set the position of the box
-$pdf->Cell(0, 0, 'Kaiserstr. 12', 0, 0, "L", 1); // add the text, align to Center of cell
-
-$pdf->SetXY(375.2, 154); // set the position of the box
-$pdf->Cell(0, 0, '76131 Karlsruhe', 0, 0, "L", 1); // add the text, align to Center of cell
-
-// TOP RIGHT EMAIL
-$pdf->SetFont('Helvetica','',8);
-$pdf->SetXY(375.2, 174); // set the position of the box
-$pdf->Cell(0, 0, 'E-Mail:', 0, 0, "L", 1); // add the text, align to Center of cell
-$pdf->SetXY(433.7, 174); // set the position of the box
-$pdf->Cell(0, 0, 'zk-aprf@mach.kit.edu', 0, 0, "L", 1); // add the text, align to Center of cell
-
-// TOP RIGHT WEB
-$pdf->SetFont('Helvetica','',8);
-$pdf->SetXY(375.2, 184); // set the position of the box
-$pdf->Cell(0, 0, 'Web:', 0, 0, "L", 1); // add the text, align to Center of cell
-$pdf->SetXY(433.7, 184); // set the position of the box
-$pdf->Cell(0, 0, 'www.mach.kit.edu', 0, 0, "L", 1); // add the text, align to Center of cell
-
-
-// TOP RIGHT BEARBEITER
-$pdf->SetFont('Helvetica','',8);
-$pdf->SetXY(375.2, 200); // set the position of the box
-$pdf->Cell(0, 0, 'Bearbeiter:', 0, 0, "L", 1); // add the text, align to Center of cell
-$pdf->SetXY(433.7, 200); // set the position of the box
-$pdf->Cell(0, 0, 'Dipl.-Ing. Ute Rietschel', 0, 0, "L", 1); // add the text, align to Center of cell
-
-
-// // TOP RIGHT ZEICHEN
-$pdf->SetFont('Helvetica','',8);
-$pdf->SetXY(375.2, 225.7); // set the position of the box
-$pdf->Cell(0, 0, 'Unser Zeichen:', 0, 0, "L", 1); // add the text, align to Center of cell
-$pdf->SetXY(433.7, 225.7); // set the position of the box
-$pdf->Cell(0, 0, "{$zeichen}_{$bewerbungs_nummer}", 0, 0, "L", 1); // add the text, align to Center of cell
-
-// // TOP RIGHT DATUM
-$pdf->SetFont('Helvetica','',8);
-$pdf->SetXY(375.2, 235.7); // set the position of the box
-$pdf->Cell(0, 0, 'Datum:', 0, 0, "L", 1); // add the text, align to Center of cell
-$pdf->SetXY(433.7, 235.7); // set the position of the box
-$pdf->Cell(0, 0, $date, 0, 0, "L", 1); // add the text, align to Center of cell
-
-
-
-
-
-// TITLE BOX
-$pdf->SetXY(60, 254); // set the position of the box
-$pdf->Cell(488, 52, '', 0, 0, "L", 1); // add the text, align to Center of cell
-
-// TITLE
-$pdf->SetFont('Helvetica','B',10);
-$pdf->SetXY(65.08, 326.6); // set the position of the box
-$pdf->Cell(0, 0, utf8_decode("Aufnahmeprüfung für den {$degree}"), 0, 0, "L", 1); // add the text, align to Center of cell
-
-// BODY ANREDE
-$pdf->SetFont('Helvetica','',10);
-$pdf->SetXY(65.08, 352); // set the position of the box
-$pdf->Cell(0, 0, 'Sehr geehrte Dame, sehr geehrter Herr,', 0, 0, "L", 1); // add the text, align to Center of cell
-
-// BODY TEXT 1
-$pdf->SetFont('Helvetica','',10);
-$pdf->SetXY(65.08, 372.5); // set the position of the box
-$pdf->MultiCell(487.5, 17.3, utf8_decode("Sie haben am {$exam_date} an der Aufnahmeprüfung für den {$degree} gemäß Satzung für den Zugang zu dem {$degree} am Karlsruher Institut für Technologie (KIT) ($legal) teilgenommen."), 0, 'J', 0);
-
-// BODY TEXT 2
-$pdf->SetFont('Helvetica','',10);
-$pdf->SetXY(65.08, 437.5); // set the position of the box
-$pdf->MultiCell(487.5, 17.3, utf8_decode("Sie haben diese Prüfung leider nicht bestanden, da die erforderliche Mindestpunktzahl gemäß der o.a. Zugangssatzung (Anlage 1, Pkt. 5.1) nicht erreicht wurde."), 0, "J", 1); // add the text, align to Center of cell
-
-// BODY TEXT 3
-$pdf->SetFont('Helvetica','',10);
-$pdf->SetXY(65.08, 486.5); // set the position of the box
-$pdf->MultiCell(487.5, 17.3, utf8_decode("Bitte beachten Sie, dass Sie laut Zugangssatzung maximal zweimal an der Aufnahmeprüfung teilnehmen dürfen."), 0, "J", 1); // add the text, align to Center of cell
-
-// BODY TEXT 3
-$pdf->SetFont('Helvetica','',10);
-$pdf->SetXY(65.08, 532.5); // set the position of the box
-$pdf->MultiCell(487.5, 17.3, utf8_decode("Die nächste Aufnahmeprüfung für den Masterstudiengang Maschinenbau wird voraussichtlich {$next_exam} angeboten."), 0, "J", 1); // add the text, align to Center of cell
-
- 
-// BODY FIN
-$pdf->SetXY(65.08, 590.2); // set the position of the box
-$pdf->Cell(0, 0, utf8_decode('Mit freundlichen Grüßen'), 0, 0, "L", 1); // add the text, align to Center of cell
-
-$pdf->SetXY(65.08, 607.2); // set the position of the box
-$pdf->Cell(0, 0, utf8_decode('KIT-Fakultät für Maschinenbau*'), 0, 0, "L", 1); // add the text, align to Center of cell
-
-// $pdf->SetXY(65.08, 571.2); // set the position of the box
-// $pdf->Cell(0, 0, utf8_decode('Kopie: Studierendenservice, Zulassungskommission'), 0, 0, "L", 1); // add the text, align to Center of cell
-
-
-
-// BODY LEGAL
-$pdf->SetFont('Helvetica','',10);
-$pdf->SetXY(65.08, 646.6); // set the position of the box
-$pdf->Cell(0, 0, utf8_decode('Rechtsbehelfsbelehrung:'), 0, 0, "L", 1); // add the text, align to Center of cell
-
-$pdf->SetXY(65.08, 655); // set the position of the box
-$pdf->MultiCell(487.5, 17.3, utf8_decode('Gegen diesen Bescheid kann innerhalb eines Monats nach dessen Bekanntgabe schriftlich oder zur Niederschrift beim Präsidium des Karlsruher Instituts für Technologie (KIT) Widerspruch eingelegt werden.'), 0, "J", 0); // add the text, align to Center of cell
-
-$pdf->SetXY(65.08, 710.2); // set the position of the box
-$pdf->Cell(0, 0, utf8_decode('*Dieser Bescheid wurde maschinell erstellt und ist ohne Unterschrift gültig.'), 0, 0, "L", 1); // add the text, align to Center of cell
-
-
-// // render PDF to browser
 $pdf->Output();
 ?>

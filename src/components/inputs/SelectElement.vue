@@ -1,289 +1,378 @@
-<template >
-  <template v-if="data">
-    <div id="element-body" ref="body" :class="{active: selectActive}">
-      <div id="overlay-select" :style="overlayStyle" v-if="selectActive" @click="closeSelect()"></div>
-      <InputElement @focus="openSelect()" @blur="blur()" :readonly="!typeToSearch" :data="{label: data.label, type: 'text', required: data.required, placeholder: data.placeholder, tooltip: data.tooltip, autocomplete: data.autocomplete ? data.autocomplete:'off'}" @valueChange="inputChanged($event)" :autocomplete="false" :height="height" class="input-select" :presetValue="selected ? nameCast(selected) : inputElementValue" @click="openSelect()" ref="input"/>
-      <div id="open-select" :class="{active: selectActive}" @click="openSelect()">
-        <svg width="32" height="18" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" version="1.1">
-          <path stroke="null" d="m31.44697,0.76641c-0.56332,-0.56332 -1.47683,-0.56342 -2.04024,0.0001l-13.40638,13.40667l-13.40705,-13.40677c-0.56332,-0.56332 -1.47683,-0.56342 -2.04024,0.0001c-0.56342,0.56342 -0.56342,1.47683 0,2.04024l14.42722,14.42684c0.27055,0.27055 0.63747,0.42251 1.02007,0.42251s0.74962,-0.15206 1.02007,-0.42261l14.42646,-14.42684c0.56351,-0.56332 0.56351,-1.47683 0.0001,-2.04024z" id="XMLID_225_"/>
+<template>
+  <div class="root">
+    <div class="select-element" :style="cursorStyle" >
+      <InputElement @valueChange="handleValueChange($event)" :optional="optional" :customError="customError" ref="input" @click="openOptions()" @enter="inputEnter($event)" :tooltip="tooltip" :placeholder="placeholder" :required="required" :readonly="readonly" :readonlynostyle="!inputTypeable" class="input-element" type="text" :label="label" @focus="openOptions()" :presetValue="value"/>
+      <div class="open-options" @click="openOptions()" :class="{active: optionsMenuOpen}">
+        <svg viewBox="0 0 32.3 20">
+          <path d="m31.44697,0.76641c-0.56332,-0.56332 -1.47683,-0.56342 -2.04024,0.0001l-13.40638,13.40667l-13.40705,-13.40677c-0.56332,-0.56332 -1.47683,-0.56342 -2.04024,0.0001c-0.56342,0.56342 -0.56342,1.47683 0,2.04024l14.42722,14.42684c0.27055,0.27055 0.63747,0.42251 1.02007,0.42251s0.74962,-0.15206 1.02007,-0.42261l14.42646,-14.42684c0.56351,-0.56332 0.56351,-1.47683 0.0001,-2.04024z"/>
         </svg>      
       </div>
-      <div id="select" :class="{active: selectActive}" :style="{height: (selectActive && options) ? `${Math.min(options.length*28, 150)}px` : '0px'}" ref="select">
-        <div class="select-option" v-for="entry in filter(options)" :key="entry.id" @click="selectEntry(entry)">{{nameCast(entry)}}</div>
+
+      <div class="options" ref="options" v-if="optionsMenuOpen">
+        <button class="option delete-option-buttion" @click.prevent="deleteSelection()" v-if="value!==null && !inputTypeable">
+          <span>Reset Selection</span>
+          <ion-icon class="icon" name="close-outline"></ion-icon>
+        </button>
+        <input class="search-options" type="text" v-if="search" placeholder="search..." v-model="searchString"/>
+        <div class="option" v-for="option in filter(options)" :key="option" @click="selectOption(option)"><span>{{option.name}}</span></div>
+        <div class="no-results" v-if="filter(options).length<=0 && searchString">
+          No results found
+        </div>
+        <div class="option" v-if="filter(options).length<=0 && searchString && emptyEmptySearchOption && !awaiting" @click="emptySearchOption(emptyEmptySearchOption)">
+          {{emptyEmptySearchOption.name}}
+        </div>
+        <DataPlaceholder v-if="awaiting" :side_length="38"/>
       </div>
+
     </div>
-    <input type="hidden" :name="name" :value="selected ? (nameAsValue ? nameCast(selected) : selected.id) : null" :style="{display: 'none'}">    
-  </template>
+    <div class="overlay" v-if="optionsMenuOpen" @click="closeOptions()"></div>
+    <input type="hidden" :value="inputValue" :name="name">
+  </div>
 </template>
 
 <script>
-import * as validationSettings from '@/validationSettings.json'
+import DataPlaceholder from '@/components/DataPlaceholder.vue'
 import InputElement from '@/components/inputs/InputElement.vue'
 export default {
   name: 'SelectElement',
   components: {
+    DataPlaceholder,
     InputElement,
   },
-  emits: ['inputChanged', 'selectedEntry'],
+  emits: ['selectedEntry', 'inputEnter', 'emptySearchOption','change','select'],
   props: {
-    name: String,
-    data: Object,
-
-    presetValue: String,
-    nameAsValue: {
+    optional: {
       default: true,
       type: Boolean,
     },
-    clear: {
+    emptyEmptySearchOption: Object,
+    inputTypeable: {
       default: false,
       type: Boolean,
     },
-    emit: {
+    label: String,
+    data: [Array,Object],
+    search: {
       default: true,
       type: Boolean,
-    },    
-    height: {
-      default: 40,
-      type: Number,
     },
-    nameCast: {
-      default: (e)=>`${e.name}`,
+    presetValue: [Number,String],
+    name: String,
+    required: Boolean,
+    tooltip: String,
+    placeholder: String,
+    readonly: Boolean,
+    cast: {
+      default: (option)=>{return {id: option.id, name: option.name}},
       type: Function,
     },
-    dynamic: {
-      default: true,
+    nameAsValue: {
+      default: false,
       type: Boolean,
     },
-    typeToSearch: {
-      default: false,
-      tpye: Boolean,
+    valueCast: {
+      default: (option)=>{return option.id},
+      type: Function,
     }
   },
   data() {
     return {
-      validationSettings,
+      typed: null,
+      optionsMenuOpen: false,
       value: null,
-      selected: null,
-      selectActive: false,
-
-      isFocused: false,
+      searchString: null,
+      selected : null,
+      id: null,
       deFocusedOnce: false,
-
-      inputElementValue: '',
+      customError: null,
+      awaiting: false,
     }
   },
   mounted() {
-    if(this.presetValue) {
-      var decode = this.options.filter(e=>this.nameCast(e)==this.presetValue)
-      if(decode.legnth==0) {
-        decode = this.options.filter(e=>e.id==this.presetValue)
-      }
-      if(decode.legnth==0) {
-        decode = this.options.filter(e=>e==this.presetValue)
-      }
-      this.selected = decode[0]
-    }
+    this.configurePresetValue(this.presetValue)
   },
   watch: {
-    deFocusedOnce(to) {
-      this.$refs.input.deFocusedOnce = to
+    customError(to) {
+      if(to) {
+        this.$refs.input.customError = to
+      }
     },
-    data() {
-      if(this.presetValue) {
-        var decode = this.options.filter(e=>this.nameCast(e)==this.presetValue)
-
-        if(decode.length==0) {
-          decode = this.options.filter(e=>e.id==this.presetValue)
-        }
-        if(decode.legnth==0) {
-          decode = this.options.filter(e=>e==this.presetValue)
-        }
-        this.selected = decode[0]
-      }      
+    deFocusedOnce(to) {
+      if(to) {
+        this.$refs.input.deFocusedOnce = true
+      }
     },
     presetValue(to) {
-      var decode = this.options.filter(e=>this.nameCast(e)==to)
-      if(decode.length==0) {
-        decode = this.options.filter(e=>e.id==to)
-      }
-      if(decode.legnth==0) {
-        decode = this.options.filter(e=>e==to)
-      }
-      this.selected = decode[0]
+      this.configurePresetValue(to)      
+    },
+    options() {
+      this.configurePresetValue(this.presetValue)
     },
   },
   computed: {
+    inputValue() {
+      if(this.selected===null) {
+        return null
+      }
+      if(this.nameAsValue) {
+        return this.value
+      }
+      return this.valueCast(this.selected)
+    },
+    cursorStyle() {
+      var style = {}
+      if(this.readonly) {
+        style['cursor'] = 'not-allowed'
+      }
+      return style
+    },
     options() {
-      var options = []
-      const intRegex = new RegExp(/^[0-9]\d*$/)
-      for(const [key, value] of Object.entries(this.data)) {
-        if(intRegex.test(key)) {
-          if(this.dynamic) {
-            options.splice(Number(key), 0, {id: Number(key), name: value})
-          } else {
-            options.splice(Number(key), 0, {id: Number(key), ...value})
-          }
+      if(!this.data) {
+        return []
+      }
+      const options = []
+      if(Array.isArray(this.data)) {
+        if(!this.data || this.data.length<1) {
+          return []
         }
+        this.data.forEach((row,index)=>{
+          var tmp = row
+          if(typeof row=='string') {
+            tmp = {id:index, name:row}
+          }
+          const option = this.cast(tmp)
+          option['index'] = index
+          options.push(option)
+        })
+      } else {
+        const keys = Object.keys(this.data)
+        if(!this.data || keys.length<1) {
+          return []
+        }
+        keys.forEach(key=>{
+          var tmp = this.data[key]
+          if(typeof this.data[key]=='string') {
+            tmp = {id:key, name:this.data[key]}
+          }
+          const option = this.cast(tmp)
+          option['index'] = key
+          options.push(option)
+        })
       }
       return options
     },
-    hasError() {
-      if(this.data.required && !this.selected) {
-        return true;
+    optionsHeight() {
+      if(this.options.length*28+24+28>140) {
+        return this.options.length*28+24+28-140
       }
-      return false;
-    },    
-    overlayStyle() {
-      return {
-        width: `${window.innerWidth}px`,
-        height: `${window.innerHeight}px`,
-        top: `${-this.$refs.body.getBoundingClientRect().y}px`,
-        left: `${-this.$refs.body.getBoundingClientRect().x}px`,
-      }
+      return 0
     },
   },
-  methods: {
-    inputChanged(value) {
-      this.inputElementValue=value;
-      var match = null;
-      this.options.forEach(e=>{
-        if(e.name==value) {
-          match = e;
-        }
-      })
-      this.selected = match;
-      this.$emit('inputChanged', value);
-      if(match && this.emit) {
-        this.$emit('selectedEntry', match)
-      }
-    },
-    selectEntry(entry) {
-      this.selected = entry;
-      this.selectActive = false;
-      if(this.clear) {
-        this.selected=null;
-      }
-      if(this.emit) {
-        this.$emit('selectedEntry', entry)
-      }
 
-    },
-    openSelect(){
-      this.selectActive = true;
+  methods: {
+    handleValueChange(event) {
+      if(this.inputTypeable) {
+        this.$emit('change', event)
+      } else {
+        this.optionsMenuOpen=false
+      }
     },
     blur() {
-      setTimeout(this.closeSelect, 500);
+      this.optionsMenuOpen = false
+      this.$refs.input.blur()
+      this.clear()
     },
-    closeSelect() {
-      if (this.selected==null) {
-        this.$refs.input.value=null; // clear searchbar if closed without selecting
-      }
-      this.selectActive = false;
+    setError(error) {
+      this.customError = error
+      this.deFocusedOnce = true
     },
-    filter(OGoptions) {
-      var options = JSON.parse(JSON.stringify(OGoptions)) //deep copy
-      if (this.$refs.select) {
-        this.$refs.select.scrollTo(0,0)
-      }
-      if(this.$refs.input==null || this.$refs.input.value==null || !this.typeToSearch || this.$refs.input.value=='') {
-        return options
-      }
-      return options.sort((a, b)=>{
-        if((this.nameCast(a).includes(this.$refs.input.value) || this.nameCast(a).toLowerCase().includes(this.$refs.input.value)) && !(this.nameCast(b).includes(this.$refs.input.value) || this.nameCast(b).toLowerCase().includes(this.$refs.input.value))){
-          return -1;
-        }
-        if(!(this.nameCast(a).includes(this.$refs.input.value) || this.nameCast(a).toLowerCase().includes(this.$refs.input.value)) && (this.nameCast(b).includes(this.$refs.input.value) || this.nameCast(b).toLowerCase().includes(this.$refs.input.value))){
-          return 1;
-        }
-        if(!(this.nameCast(a).includes(this.$refs.input.value) || this.nameCast(a).toLowerCase().includes(this.$refs.input.value)) && !(this.nameCast(b).includes(this.$refs.input.value) || this.nameCast(b).toLowerCase().includes(this.$refs.input.value))){
-          return 0;
-        }
-        if((this.nameCast(a).includes(this.$refs.input.value) || this.nameCast(a).toLowerCase().includes(this.$refs.input.value)) && (this.nameCast(b).includes(this.$refs.input.value) || this.nameCast(b).toLowerCase().includes(this.$refs.input.value))){
-          return 0;
-        }                      
-      });
+    emptySearchOption(option) {
+      this.awaiting = true
+      this.$emit('emptySearchOption', {value: this.searchString, option})
     },
-    sort(options) {
-      options.forEach(e=>{
-        this.nameCast(e).includes(this.$refs.input.value)
+    inputEnter(value) {
+      this.$emit('inputEnter', value)
+    },
+    deleteSelection() {
+      this.value=null
+      this.selected=null
+      this.id=null
+      this.$emit('selectedEntry', null)
+      this.$emit('select', null)
+      this.searchString = null
+      this.closeOptions()
+    },
+    clear() {
+      this.$refs.input.clear()
+      this.value = null
+      this.id = null
+      this.selected = null
+      this.deFocusedOnce = false
+    },
+    configurePresetValue(value) {
+      if(value===null || value===undefined || value==='') {
+        this.clear()
+        return 
+      }
+      const option = this.options.find(option=>option.id==value)
+
+      if(option) {
+        this.selected = option
+        this.id = option.id
+        this.value = option.name
+      } else if(this.inputTypeable) {
+        this.$refs.input.value = value
+      }
+    },
+    openOptions() {
+      if(this.readonly) {
+        return
+      }
+      this.$refs.input.focusActive = true
+      this.$refs.input.lock = true
+      this.optionsMenuOpen = true
+    },
+    closeOptions() {
+      this.$refs.input.focusActive = false
+      this.$refs.input.lock = false
+      this.optionsMenuOpen = false
+      this.deFocusedOnce = true
+    },
+    selectOption(option) {
+      this.value = option.name
+      this.selected = option
+      this.id = option.id
+      this.searchString = null
+      this.closeOptions()
+      this.$emit('selectedEntry', {id: option.id, name: option.name})
+      this.$emit('select', {id: option.id, name: option.name})
+    },
+    filter(data) {
+      if(!data || data.length<=0) {
+        return []
+      }
+      
+      var dataFiltered = data.filter(row=>{
+        if(!this.searchString || row.name.match(new RegExp(this.searchString, "i"))) {
+          return true
+        }
+        return false
       })
-    },  
+      if(!dataFiltered || dataFiltered.length<=0) {
+        return []
+      }
+      return dataFiltered
+    },
   },
+
+
 }
 </script>
 
 
 <style scoped lang="scss">
-@import 'D:\\inetpub\\MPortal\\src\\_variables';
-#overlay-select {
-  z-index: 1;
-  position:absolute;
-}
-#element-body {
-  margin: 0px 0;
-  position: relative;
-  font-family: inherit;
-  &:not(.active) {
-    z-index: 0;
-  }
-}
-.input-select {
-  position: relative;
-  z-index: 2;
-}
-
-#select {
-  min-height: 48px;
-  max-height: 156px;
-  position: absolute;
-  opacity: 0;
-  bottom: 14px;
-  transform: translateY(100%);
-  background-color: #fff;
-  z-index: 2;
-  overflow-y: scroll;
+.no-results {
   width: 100%;
-  height: 0;
-  padding: 5px;
-  box-shadow: 0px 0px 6px 2px rgba(0,0,0,0.35);
-  padding: 0px;
-  pointer-events: none;
-  &.active {
-    transition: height 0.3s cubic-bezier(.4,0,.2,1), opacity 0.3s cubic-bezier(.4,0,.2,1);
-    height: 94px;
-    pointer-events: all;
-    opacity: 1;
-  }
-}
-.select-option {
-  text-align: left;
-  cursor: pointer;
-  padding: 2px 4px 2px 4px;
-  font-size: 20px;
-  &:hover {
-    background-color: $background_hover_dark;
-    color: $text_light;
-  }
-  &.selected {
-    background-color: $kit_green;
-    color: $text_light;
-  }
-}
-#open-select {
-  position: absolute;
-  cursor: pointer;
-  >svg {
-    transform: rotate(0deg) scale(0.4);
-    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
-  }
-  right: 0;
-  bottom: 14px;
-  &.active {
-    > svg {
-      transform: rotate(180deg) scale(0.4);
-      transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  padding: 8px 16px;
+  min-height: 32px;
+  font-size: 16px;
+  border-radius: 4px;
 
+}
+.delete-option-buttion {
+  position: relative;
+  box-sizing: border-box;
+  width: calc(100% - 8px);
+  right: 0;
+  gap: 16px;
+  border: 2px solid #dc3545 !important;
+  * {color: #dc3545;}
+  &:hover {
+    * {
+      color: white;
     }
   }
+  .icon {
+    font-size: 24px;
+  }
+}
+.search-options {
+  position: relative;
+  min-height: 38px;
+  font-size: 16px;
+  width: calc(100% - 24px);
+  margin: 8px 12px 8px 12px;
+}
+
+.select-element {
+  position: relative;
+  
+}
+.input-element {
+  position: relative;
+  z-index: 1;
+}
+.open-options {
+  // cursor: pointer;
+  top: 11px;
+  right: 0;
+  position: absolute;
+  width: 32px;
+  height: 20px;
+  transform: scale(0.6) rotate(0);
+  transition: transform .3s ease;
+  &.active {
+    transform: scale(0.6) rotate(180deg);
+    transition: transform .3s ease;
+  }
+}
+.options {
+  box-sizing: border-box;
+  left: 0;
+  // padding: 4px 0px;
+  position: absolute;
+  display: inline-block;
+  width: 100%;
+  background-color: white;
+  box-shadow: 0px 2px 4px 4px rgba(0,0,0,0.3);
+  // border: 1px solid #00876c;
+  top: 34px;
+  overflow-y: auto;
+  max-height: 230px;
+  z-index: 101;
+  border-top: none;
+}
+
+.option {
+  position: relative;
+  padding: 8px 2px;
+  margin: 4px 12px;
+  min-height: 32px;
+  font-size: 16px;
+  border: 2px solid #eeeeee;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+
+  > span {
+    width: 100%;
+    word-wrap: break-word;
+    text-align: start;
+  }
+  color: #2c3e50;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #2c3e50;
+    color: white;
+  }
+}
+.overlay {
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
 }
 </style>

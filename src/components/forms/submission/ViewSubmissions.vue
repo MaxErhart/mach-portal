@@ -1,188 +1,417 @@
 <template>
-  <template v-if="submissions!=null && form!=null">
-    
-    <div class="view-submissions">
-     
-      <div class="view-submissions-body" :style="gridStyle" ref="body">
-        <JSONToTable :rowMenu="submissionOptions" :data="submissionsTransformed" :columnSettings="columnSettings" :itemClickable="false" @menuItemClicked="submissionMenuItemClicked($event)"/>
-      
+  <div class="view-submissions">
+
+    <dialog ref="archive" class="archive-form">
+      <h3>Archive selected submissions</h3>
+      <div class="form-elements">
+        <Checkbox label="Move to submissions to Archive / Remove submissions from Archive" @change="to_archive=$event" :presetValue="to_archive"/>
+        <SelectElement :preset_value="to_archive_group" @change="changeArchiveGroup($event)" tooltip="Name by which archived submissions will be grouped" ref="archive_group" label="Archive group" :inputTypeable="true" :data="form?.archive_groups" :search="false"/>
+        <Button text="Move Submissions" @click.prevent="archiveSelectedSubmissions()"/>
+      </div>
+    </dialog>
+
+    <div class="view-options" v-if="form?.permission>=3">
+      <button @click="openArchiveOptions()">Manage Archive</button>
+    </div>
+
+    <div class="archive">
+      <h3>Archived submissions</h3>
+      <div class="archive-submissions" v-for="key in form?.archive_groups" :key="key" :class="{open: key in open_archives}">
+        <div class="archive-submissions-title" @click="openArchive(key,key in open_archives)">{{key}}</div>
+        <div class="archive-submissions-body">
+          <DataPlaceholder v-if="key in archive_loading && archive_loading[key]"/>
+          <template v-else>
+            <JSONToTable ref="table" :dataset_permission="form?.permission" :columns="columns" :data="archive_data(key)" :select="true" :col_filter="true" :rowmenu="rowmenu_archive" @option="handleOption($event)" @select="handleSelect($event)"/>
+          </template>
+          
+        </div>
       </div>
     </div>
-  </template>
-  <form id="file-download" v-if="hasSubmissions" method="get" :action="`https://www-3.mach.kit.edu/dfiles/submissions/${submissions[0]['export']}`">
-    <button type="submit">Download</button>
-  </form>    
+
+    <div class="submissions">
+      <JSONToTable ref="table" :dataset_permission="form?.permission" :columns="columns" :data="data" :select="true" :col_filter="true" :rowmenu="rowmenu" @option="handleOption($event)" @select="handleSelect($event)"/>
+    </div>
+  </div>
 </template>
 
 <script>
-// import IconButton from '@/components/IconButton.vue'
-import JSONToTable from '@/components/JSONToTable.vue'
+import JSONToTable from '@/components/JSONToTable2.vue'
+import DataPlaceholder from '@/components/DataPlaceholder.vue'
+import SelectElement from '@/components/inputs/SelectElement.vue'
+import Button from '@/components/Button.vue'
+import Checkbox from '@/components/inputs_23/Checkbox.vue'
+
 export default {
   name: 'ViewSubmissions',
-  components:  {
-    // IconButton,
+
+
+
+  components: {
     JSONToTable,
+    DataPlaceholder,
+    SelectElement,
+    Button,
+    Checkbox,
   },
-  emits: ['editSubmission', 'deleteSubmission'],
-  props: {
-    submissions: Object,
+
+
+props: {
+
     form: Object,
-    showUser: {
-      default: true,
-      type: Boolean,
-    },
+
+    // Submissions object contains all submissions related to the form
+    // This includes all submissions of forms referenced by the form
+    // The structure is {form_id_1: submissions_1, form_id2: submissions_2, ...}
+    form_and_reference_submissions: Object,
   },
+
+
   data() {
     return {
-      submissionOptions: [
-        {icon: 'cogwheel', text: 'Edit Submission', width: 24, height: 24, name: 'editSubmission'},
-        {icon: 'trash', text: 'Delete Submission', width: 24, height: 24, name: 'deleteSubmission'},
+      rowmenu: [
+        {id: 0,icon: 'create-outline', text: 'View / Edit Submission', name: 'editSubmission', permission: 2, two_step: false, dataset_permission: 2},
+        {id: 1,icon: 'copy-outline', text: 'Copy Submission', name: 'copySubmission', permission: 1, two_step: false, dataset_permission: 2},
+        {id: 1,icon: 'lock-closed-outline', text: 'Archive', name: 'archiveSubmission', permission: 1, two_step: false, dataset_permission: 3},
+        {id: 2,icon: 'trash-outline', text: 'Delete Submission', name: 'deleteSubmission', permission: 3, two_step: true, dataset_permission: 2},
       ],
-      activeRow: {index: null, top: null, optionsHeight: 80},
-      bodyRect: {top: null},
+      rowmenu_archive: [
+        // {id: 0,icon: 'create-outline', text: 'View / Edit Submission', name: 'editSubmission', permission: 2, dataset_permission: 3},
+        // {id: 1,icon: 'copy-outline', text: 'Copy Submission', name: 'copySubmission', permission: 1, twoStep: false, dataset_permission: 2},
+        {id: 1,icon: 'lock-open-outline', text: 'Remove from Archive', name: 'dearchiveSubmission', permission: 1, twoStep: false, dataset_permission: 3},
+        // {id: 2,icon: 'trash-outline', text: 'Delete Submission', name: 'deleteSubmission', permission: 3, twoStep: true, dataset_permission: 3},
+      ],
+      open_archives: {},
+      archive_submissions: {},
+      archive_loading: {},
 
+      selected: [],
+      to_archive: false,
+      to_archive_group: null,
     }
   },
+
 
   mounted() {
-    // console.log(this.$myGlobalVariable(this.submissions[0]))
-    
+    // console.log(this.submissions)
   },
+
+
+
   computed: {
-    columnSettings() {
-      return {
-        type: 'blacklist',
-        order: this.inputElements ? this.inputElements.map(e=>e.data.label):null,
-        items: [
-          'permission','form.submissions','form.created_at',
-          'form.updated_at','form.no_login','form.display',
-          'export','user.id','id',
-          'user_id','form_id','read',
-          'edit','form_elements','form.form_elements',
-          'form.name','form.deadline','form.multiple_submissions',
-          'form.public','form.creator_id','form.id',
-          'user.affiliation','created_at', 'updated_at',
-          'user.created_at', 'user.updated_at', 'user.groups',
-          'form.email_element_id','user.email_verified_at'
-        ],
+
+    columns() {
+      const columns = [
+        {id:'owner_name',name:'owner.name',show:true,position:999},
+        {id:'owner_email',name:'owner.email',show:true,position:999},
+        {id:'owner_fieldOfStudyId',name:'owner.fieldOfStudyId',show:true,position:999},
+        {id:'owner_fieldOfStudyText',name:'owner.fieldOfStudyText',show:true,position:999},
+        {id:'owner_matriculationNumber',name:'owner.matriculationNumber',show:true,position:999},
+      ]
+      if(this.form?.no_login) {
+        columns.push({id:'confirmed',name:'confirmed',show:true,position:998})
       }
+      this.recursiveSortElements(this.elements).forEach((el,index)=>{
+        columns.push({id:el.id,name:el.label,show:el.show,position:index})
+      })
+      return columns.sort((a,b)=>{
+        if(a.position>b.position) {
+          return 1
+        }
+        if(a.position==b.position) {
+          return 0
+        }
+        return -1
+      })
     },
-    submissionsTransformed() {
-      return this.submissions.map(submission=>{
-        var subContainer = this.$myGlobalVariable(submission)
-        var submissionData = submission.form_elements.filter(formElement=>{
-          return this.inputElements.map(el=>el.id).includes(formElement.id)
-        })
-        submissionData.forEach(data=>{
-          if(!data.data.show) {
+
+    data() {
+      if(!this.form_and_reference_submissions?.[this.form?.id] || !this.form?.form_elements?.[this.form.id]) {
+        return []
+      }
+      const data = []
+      this.form_and_reference_submissions?.[this.form?.id].forEach(submission=>{
+        var row = {}
+        if(submission.is_archived) {
+          return
+
+        }
+        this.elements.forEach(el=>{
+          var curr_sub = submission
+          if(curr_sub.is_archived) {
+            if(el.component=="DoubleInputElement") {
+              row[el.id] = `<a href="${curr_sub.archive_data[el.id].url}">${curr_sub.archive_data[el.id].alias}</a>`
+              return
+            }
+            row[el.id] = curr_sub.archive_data[el.id]
             return
           }
-          if(data.data.columnName) {
-            subContainer[data.data.columnName] = data.pivot.data
-          } else {
-            subContainer[data.data.label] = data.pivot.data
-          }
-        })
-        return subContainer
-      })
-    },
-    hasSubmissions() {
-      if(this.submissions!==null && this.submissions.length>0) {
-        return true
-      }
-      return false
-    },
-    inputElements() {
-      return this.form.form_elements.filter(e=>{
-        return (['InputElement', 'FileUploadElement', 'SelectElement', 'Checkbox', 'SelectReferenceElement'].includes(e.component) && e.data.show)
-      })
-    },
-    gridStyle() {
-      const ncols = this.headers.length-1
-      return {
-        'display': 'grid',
-        // 'grid-template-columns': `minmax(20px, 120px) repeat(${ncols}, minmax(200px, auto))`
-        'grid-template-columns': `max-content repeat(${ncols}, minmax(max-content, auto))`
-      }
-    },
-    rowStyle() {
-      return {
-        'top': `${this.activeRow.optionsHeight}px`,
-      }
-    },
-    headers() {
-      var headers = []
-      if(this.showUser && this.form.no_login==0) {
-        headers.push({name: 'Username', id: 'username'})
-        headers.push({name: 'Email', id: 'useremail'})
-      }      
-    
-      this.inputElements.forEach(e=>{
-        headers.push({name: e.data.label, id: e.id})
-      })
+          for(var i=0;i<el.path.length;i++) {
+            const ref_val = curr_sub._data[el.path[i].el_id]
 
-      return headers
+            curr_sub = this.form_and_reference_submissions[el.path[i].form_id].find(sub=>sub.id==ref_val)
+            if(ref_val===null || ref_val===undefined || curr_sub===null || curr_sub===undefined) {
+              row[el.id] = null
+              return
+            }
+            if(curr_sub.is_archived) {
+              if(el.component=="DoubleInputElement") {
+                row[el.id] = `<a href="${curr_sub.archive_data[el.id].url}">${curr_sub.archive_data[el.id].alias}</a>`
+                return
+              }
+              row[el.id] = curr_sub.archive_data[el.id]
+              return
+            }
+          }
+          var value = curr_sub._data[el.id] 
+          if(el.component=="SelectElement") {
+            value = el.data.data.find(option=>option.id==curr_sub._data[el.id])?.name
+          }
+          if(el.component=="DoubleInputElement") {
+            value = `<a href="${value.url}">${value.alias}</a>`
+            // value = el.data.data.find(option=>option.id==curr_sub._data[el.id])?.name
+          }
+          row[el.id] = value
+        })
+        row['permission'] = submission.permission
+        row['id'] = submission.id
+        row['owner_name'] = submission.owner.name
+        row['owner_email'] = submission.owner?.email
+        row['owner_fieldOfStudyId'] = submission.owner?.fieldOfStudyId
+        row['owner_fieldOfStudyText'] = submission.owner?.fieldOfStudyText
+        row['owner_matriculationNumber'] = submission.owner?.matriculationNumber
+        if(this.form.no_login) {
+          row['confirmed'] = submission.confirmed
+        }
+        data.push(row)
+      })
+      console.log(data)
+      return data
     },
-    optionsStyle() {
-      return {
-        'top': `${this.activeRow.top}px`,
-        'height': `${this.activeRow.optionsHeight}px`,
-        'width': `${this.$refs.body.scrollWidth}px`,
-        'border-bottom': '1px solid black',
-        'border-left': '1px solid black',
-        'border-right': '1px solid black',
-        'z-index': 0,
+
+    elements() {
+      if(!this.form?.form_elements?.[this.form?.id]) {
+        return []
       }
+      var elements = []
+
+      Object.keys(this.form.form_elements[this.form.id]).forEach(el_id=>{
+
+        const el = this.form.form_elements[this.form.id][el_id]
+        if(!el.input) {
+          return
+        }
+        elements = elements.concat(this.getElementReferencesRecursively(this.form.form_elements,el))
+      })
+      return elements
     }
+
   },
   methods: {
-    submissionMenuItemClicked(event) {
-      if(event.name=='editSubmission') {
-        this.editSubmission(event.index)
-      } else if(event.name=='deleteSubmission') {
-        this.deleteSubmission(event.index)
-      }
-    },
-    getData(submission) {
-      var data = []
-      this.headers.forEach(h=>{
-        if(h.id=='username') {
-          data.push(submission.user.lastname)
-        } else if(h.id=='useremail') {
-          data.push(submission.user.email)
-        } else {
-          data.push(submission.form_elements.find(e=>e.id==h.id).pivot.data)
+    recursiveSortElements(elements) {
+      const elements_sorted = elements.sort((a,b)=>{
+        if(a.path.length<=0 && b.path.length<=0) {
+          if(a.position>=b.position) {
+            return 1
+          }
+          return -1
         }
+        if(a.path.length<=0) {
+          if(a.position>=b.path[0].position) {
+            return 1
+          }
+          return -1
+        }
+        if(b.path.length<=0) {
+          if(a.path[0].position>=b.position) {
+            return 1
+          }
+          return -1
+        }
+
+        const l1 = a.path.length
+        const l2 = b.path.length
+        if(l1>l2) {
+          for(var i=0; i<l2;i++) {
+            if(a.path[i].position>b.path[i].position) {
+              return 1
+            }
+            if(a.path[i].position<b.path[i].position) {
+              return -1
+            }
+          }
+          if(a.path[l2].position>=b.position) {
+            return 1
+          }
+          return -1
+        }
+        if(l1<l2) {
+          for(var j=0; j<l1;j++) {
+            if(a.path[j].position>b.path[j].position) {
+              return 1
+            }
+            if(a.path[j].position<b.path[j].position) {
+              return -1
+            }
+          }
+          if(b.path[l1].position>=a.position) {
+            return -1
+          }
+          return 1
+        }
+        if(l1==l2) {
+          for(var k=0; k<l1;k++) {
+            if(a.path[k].position>b.path[k].position) {
+              return 1
+            }
+            if(a.path[k].position<b.path[k].position) {
+              return -1
+            }
+          }
+        }
+      })
+      return elements_sorted
+    },
+
+    archive_data(key) {
+      if(!(key in this.archive_submissions)) {
+        return []
+      }
+      console.log(this.archive_submissions,key)
+      return this.archive_submissions[key].map(submission=>{
+        var row = JSON.parse(JSON.stringify(submission.archive_data))
+        Object.keys(this.form.form_elements[this.form.id]).forEach(el_id=>{
+          if(this.form.form_elements[this.form.id][el_id].component==="DoubleInputElement") {
+            row[el_id] = submission.archive_data[el_id].url
+          }
+        })
+        row['permission'] = submission.permission
+        row['id'] = submission.id
+        row['owner_name'] = submission.archive_owner.name
+        return row
+      })
+    },
+
+    openArchive(key,open) {
+      if(!open) {
+        this.getArchiveSubmissions(key)
+      }
+      if(key in this.open_archives) {
+        delete this.open_archives[key]
+        return
+      }
+      this.open_archives[key] = true
+    },
+
+    getElementReferencesRecursively(form_elements,element, path_prefix=[], prefix='') {
+      if(!element) {
+        return []
+      }
+      var label = prefix+element.data.label
+      if(element.component!=="SelectReferenceElement") {
+        if(element.component==="DoubleInputElement") {
+          const ret_el = [{...element,label,path:path_prefix}]
+          ret_el[0].label = element.data["label_url"]
+          console.log(ret_el,element)
+          return ret_el
+        }
+        if(element.data.label_short) {
+          console.log(element)
+          label=prefix+element.data.label_short
+        }
+        return [{...element,label,path:path_prefix}]
+      }
+      var data = []
+      var path = JSON.parse(JSON.stringify(path_prefix))
+      path.push({el_id:element.id,form_id:element.data.formId,position:element.position})
+      element.data.formElementIds.forEach(id=>{
+        data = data.concat(this.getElementReferencesRecursively(form_elements,form_elements[element.data.formId][id],path,label+'.'))
       })
       return data
     },
-    open(event, index) {
-      var correction = 0
-      if(this.bodyRect.top==null) {
-        this.bodyRect.top = this.$refs.body.getBoundingClientRect().top
-      }
-      if(index>this.activeRow.index && this.activeRow.index!=null) {
-        correction = -this.activeRow.optionsHeight
-      }
-      this.indexOpen = index
-      const top = event.target.getBoundingClientRect().top + event.target.getBoundingClientRect().height - this.bodyRect.top + correction
-      this.activeRow.index = index
-      this.activeRow.top = top
 
+    highlight(submission) {
+      const index = this.form_and_reference_submissions[this.form.id].map(form_submission=>form_submission.id).indexOf(submission.id)
+      this.$refs.table.highlight(index)
     },
-    close() {
-      this.activeRow = {index: null, top: null, optionsHeight: 80}
+
+    handleSelect(selected) {
+      this.selected = selected.rows.map(row=>row.id)
+      console.log(this.selected)
     },
-    deleteSubmission(index) {
-      this.close()
-      const id = this.submissions[index].id
-      this.$emit("deleteSubmission", {id: id, index: index})
+
+    async getArchiveSubmissions(key) {
+      this.archive_loading[key] = true
+      const {submissions, error} = await this.$store.dispatch('_archive', {method:'get',key,form_id:this.form.id})
+      this.archive_submissions[key] = submissions
+      console.log(submissions,error?.response)
+      this.archive_loading[key] = false
     },
-    editSubmission(index) {
-      const id = this.submissions[index].id
-      this.$emit("editSubmission", {id: id, index: index})
+
+    async archiveSubmissions(object,key) {
+      const formData = new FormData()
+      formData.append('ids', JSON.stringify(object))
+      formData.append('archive_group', key)
+      formData.append('form_id', this.form.id)
+      const {submissions,archive, error,archive_groups} = await this.$store.dispatch('_archive', {method:'post',form_id:this.form.id,formData})
+      console.log(submissions,archive,error?.response,archive_groups)
+      this.archive_submissions = archive
+      this.$emit('archive', {submissions,archive_groups})
     },
-  },
+
+    async dearchiveSubmissions(object) {
+      const formData = new FormData()
+      formData.append('ids', JSON.stringify(object))
+      formData.append('form_id', this.form.id)
+      const {submissions, archive, error,archive_groups} = await this.$store.dispatch('_archive', {method:'post',archive:false,form_id:this.form.id,formData})
+      console.log(submissions,archive,error,archive_groups)
+      this.archive_submissions = archive
+      this.$emit('dearchive', {submissions,archive_groups})
+    },
+
+    handleOption({option,row}) {
+      if(option.name=='editSubmission') {
+        this.$emit("editSubmission",row.id)
+      } else if(option.name=='deleteSubmission') {
+        this.$emit("deleteSubmission", row.id)
+      } else if(option.name=='copySubmission') {
+        this.$emit("copySubmission", row.id)
+      } else if(option.name=='archiveSubmission') {
+        const obj = [row.id]
+        this.archiveSubmissions(obj,'')
+      } else if(option.name=='dearchiveSubmission') {
+        const obj = [row.id]
+        this.dearchiveSubmissions(obj)
+      }
+    },
+    changeArchiveGroup(event) {
+      this.to_archive_group=event
+    },
+    // 
+    // --------------------------------
+    // 
+    archiveSelectedSubmissions() {
+      if(this.to_archive) {
+        this.archiveSubmissions(this.selected,this.to_archive_group)
+      } else {
+        this.dearchiveSubmissions(this.selected)
+      }
+      this.closeArchiveOptions()
+    },
+    closeArchiveOptions() {
+      this.$refs.archive.close()
+      this.to_archive=false
+    },
+    openArchiveOptions() {
+      this.$refs.archive.showModal()
+      this.$refs.archive_group.blur()
+      this.$refs.archive.addEventListener("mousedown", e=>{
+        const dialog_rect = this.$refs.archive.getBoundingClientRect()
+        if(e.clientX < dialog_rect.left || e.clientX > dialog_rect.right || e.clientY < dialog_rect.top || e.clientY > dialog_rect.bottom) {
+          this.closeArchiveOptions()
+        }
+      })
+    },
+  }
 
 }
 </script>
@@ -190,89 +419,66 @@ export default {
 
 <style scoped lang="scss">
 @import 'D:\\inetpub\\MPortal\\src\\_variables';
-
-#file-download {
+.view-submissions{
   display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
+  flex-direction:column;
+  gap: 32px;
 }
-.view-submissions {
+.archive {
+  text-align: left;
   position: relative;
-  width: 100%;
-  height: 100%;
-}
-.view-submissions-body {
-  position: relative;
-}
-.submissions-columnames {
-  position: relative;
-  width: 100%;
-  text-align: center;
-  background-color: $kit_green;
-  color: $text_light;
-  padding: 8px 18px;
-}
-.submission-row {
-  position: relative;
-  display: contents;
-  :first-child {
-    &.active {
-      border-top-left-radius: 4px;
-      border-left: 1px solid black;
+  .archive-submissions {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #cccccc;
+    z-index: 3;
+
+    &.open {
+      overflow: visible;
+      outline: 2px solid black;
+      border-radius: 4px;
+      .archive-submissions-body {
+        padding: 16px 0;
+        height: 100%;
+      }
     }
-  }
-  :last-child {
-    &.active {
-      border-top-right-radius: 4px;
-      border-right: 1px solid black;
-    }
-  }
-  &:nth-child(2n) {
-    > * {
-      background-color: #eee;
-    }
-  }
-  &:nth-child(2n+1) {
-    > * {
-      background-color: #f9f9f9;
-    }
-  }  
-  &:hover {
-    > * {
+    .archive-submissions-title {
+      position: relative;
+      background-color: #dddddd;
+      z-index: 1;
+      padding: 8px;
       cursor: pointer;
+      &:hover {
+        background-color: #ccc;
+      }
+    }
+    .archive-submissions-body {
+      position: relative;
+      z-index: 0;
+      height: 0;
+      padding: 0;
     }
   }
 }
-.submission-item {
-  position: relative;
-  padding: 8px;
-  top: 0;
-  transition: top .4s ease;
-  z-index: 1;
-  &.active {
-    border-top: 1px solid black;
-  }
 
-}
-.row-options {
-  padding: 5px;
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  // width: 100%;
-  z-index: -1;
-  height: 0;
-  transition: height .4s ease;
-  box-shadow: 0px 0px 4px 0px inset rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  border-bottom-right-radius: 4px;
-  border-bottom-left-radius: 4px;
-  padding: 4px 0;
-  > * {
-    padding: 4px;
-    width: 100%;
+// 
+// --------------------------------------------
+// 
+.view-options {
+  text-align: left;
+  button {
+    padding: 16px;
+    border: 1px solid black;
+    cursor: pointer;
+    &:hover {
+      background-color: $text-dark;
+      color: white; 
+    }
   }
 }
+
+
+
+
+
 </style>

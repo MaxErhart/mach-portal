@@ -1,8 +1,8 @@
 <template>
   <div class="permissions">
     <form class="permissions-form" ref="form" @submit.prevent="submit()">
-      <SelectElement @selectedEntry="selectGroup($event)" name="group" :data="group_selectElement" :nameAsValue="false" :dynamic="false" :typeToSearch="true"/>
-      <SelectElement @selectedEntry="selectApp($event)" :clear="true" :data="app_selectElement" :nameAsValue="false" :dynamic="false" :typeToSearch="true"/>
+      <SelectElement @selectedEntry="selectGroup($event)" :data="groups" :search="true" name="group" :label="group_selectElement.label" :required="group_selectElement.required"/>
+      <SelectElement @selectedEntry="selectApp($event)" :search="true" :data="filteredApps" :label="app_selectElement.label" :required="app_selectElement.required"/>
       <div id="display-selected-apps">
         <div class="selected-app" v-for="(app, index) in selectedApps" :key="app">
           <span>{{app.name}}</span>
@@ -24,12 +24,14 @@ export default {
   name: 'Home',
   components: {
     SelectElement,
-    Button
+    Button,
   },
   data() {
     return {
       groupsFetched: false,
       groups: null,
+      group_selectElement: {label: 'Select Group', required: true},
+      app_selectElement: {label: 'Select App', required: false},
 
       appsFetched: false,
       apps: null,
@@ -41,26 +43,11 @@ export default {
     this.getApps()
   },
   computed: {
-    group_selectElement() {
-      const data = {label: 'Select Group', required: true}
-      if(this.groupsFetched) {
-        this.groups.forEach((group, index)=>{
-          data[index] = group
-        })
+    filteredApps() {
+      if(!this.apps) {
+        return []
       }
-      return data
-    },
-    app_selectElement() {
-      const data = {label: 'Select App', required: false}
-      if(this.appsFetched) {
-        this.apps.forEach((app, index)=>{
-          if(this.selectedApps.map(app=>app.id).includes(app.id)){
-            return
-          }
-          data[index] = app
-        })
-      }
-      return data
+      return this.apps.filter(app=>!this.selectedApps.map(app=>app.id).includes(app.id))
     }
   },
   methods: {
@@ -110,28 +97,17 @@ export default {
         console.log(error.response)
       })
     },
-    getGroups() {
-      const url = `${this.$store.getters.getApiUrl}/groups`
-
-      axios({
-        method: 'get',
-        url: url,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }).then(response=>{
-        console.log(response.data)
-        this.groups = response.data
-        this.groupsFetched = true
-      }).catch(error=>{
-        console.log(error.response)
-      }) 
-    }
+    async getGroups() {
+      const {groups} = await this.$store.dispatch('groups')
+      this.groupsFetched = true
+      this.groups = groups
+    },
   },
 }
 </script>
 
 <style lang="scss" scoped>
+
 #display-selected-apps {
   width: 100%;
   border: 1px solid black;

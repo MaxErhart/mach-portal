@@ -26,10 +26,10 @@ function getUserInformation() {
     return $user_information;
 }
 
-echo "<pre>";
-print_r(getUserInformation());
-echo "</pre>";
-echo "<pre>";
-print_r($_SERVER);
-echo "</pre>";
+// echo "<pre>";
+// print_r(getUserInformation());
+// echo "</pre>";
+// echo "<pre>";
+// print_r($_SERVER);
+// echo "</pre>";
 ?>

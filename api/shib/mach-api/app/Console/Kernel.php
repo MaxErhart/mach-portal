@@ -4,6 +4,8 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Carbon\Carbon;
+use DB;
 
 class Kernel extends ConsoleKernel
 {
@@ -24,7 +26,14 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // $schedule->call(function() {
+        //     $forms = DB::table('forms')->where('no_login',1)->get();
+        //     foreach($forms as $form) {
+        //         $submissions = DB::table('submissions')->where('form_id',$form->id)->where('owner_id',131)->where('owner_type','App\\Models\\Group')->where('confirmed',0)->where('created_at', '<=', now()->addMinutes(-90))->delete();
+        //     }
+        // })->daily();
+
+        $schedule->call('App\Http\Controllers\api\ArchiveController@crawler')->daily();
     }
 
     /**

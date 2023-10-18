@@ -1,85 +1,217 @@
 <template>
-  <div class="submit-form">
-    <NavBar :tabs="navTabs" @change="updateTab($event)" ref="navBar"/>
-    <div class="submit-form-main-content">
-      <template v-if="awaitData">
-        Awaiting Data (Try logging in or refresh the page.)
-      </template>
-      <template v-else>
-        <Submitting v-if="tabIndex==0" :form="form" :submission="edit!=null ? submissions[edit.index] : null" @updated="updateSubmission($event)" @submitted="addSubmission($event)"/>
-        <ViewSubmissions :form="form" :submissions="submissions" v-if="tabIndex==1" @editSubmission="editSubmission($event)" @deleteSubmission="deleteSubmission($event)"/>
-        <FormInfo v-if="tabIndex==2"/>
-      </template>
+  
 
+  <div class="submit-form" v-if="form && groups">
+    <NavBar @readHistory="readHistory($event)" :tabs="navTabs" ref="nav_tabs" :paginate="true"/>
+    <div class="submit-form-alert-deadline" v-if="deadlinePassed(form?.deadline)">The deadline for this form has passed.</div>
+    <div class="submit-form-alert-close-to-deadline" v-if="timeToDeadline(form?.deadline).show">Deadline is in {{timeToDeadline(form?.deadline).hours}} hours and {{timeToDeadline(form?.deadline).minutes}} minutes.</div>
+    <div class="submit-form-main-content" :style="{display: route=='submissions' ? 'block' : 'none'}">
+      <ViewSubmissions ref="view_submissions" :loading="awaitFormData||awaitSubmissionData" :optionLoading="optionLoading" :form="form" :form_and_reference_submissions="submissions" @copySubmission="copySubmission($event)" @archive="archive($event)" @dearchive="dearchive($event)" @editSubmission="editSubmission($event)" @deleteSubmission="deleteSubmission($event)"/>
+    </div>
+    <div class="submit-form-main-content" v-if="!(awaitFormData||awaitSubmissionData)">
+      <Submitting @seen="seen($event)" :selected_organization="selected_organization" v-if="route=='submit'" :form="form" :submissions="submissions" @newReply="newReply($event)" @updateSubmission="updateSubmission($event)" @submitted="addSubmission($event)"/>
+      <FormBescheide v-if="route=='bescheide'"/>
+      <FormInfo v-if="route=='info'" :form="form"/>
+      <UploadSubmissions :form="form" v-if="route=='upload_submissions'"/>
+    </div>
+    <div v-else>
+      <DataPlaceholder/>
     </div>
   </div>
+
 </template>
 
 <script>
+
+import DataPlaceholder from '@/components/DataPlaceholder.vue'
 import NavBar from '@/components/NavBar.vue'
 import Submitting from '@/components/forms/submission/Submitting.vue'
 import ViewSubmissions from '@/components/forms/submission/ViewSubmissions.vue'
 import FormInfo from '@/components/forms/submission/FormInfo.vue'
-import axios from "axios";
+import FormBescheide from '@/components/forms/submission/FormBescheide.vue'
+import UploadSubmissions from '@/components/forms/UploadSubmissions2.vue'
 export default {
   name: 'SubmitForm',
   props: {
   },
   components: {
+    DataPlaceholder,
     NavBar,
     Submitting,
     ViewSubmissions,
     FormInfo,
+    FormBescheide,
+    UploadSubmissions,
   },
   data() {
     return {
       form: null,
-      awaitData: true,
-      tabIndex: 0,
-      navTabs: [
-        {text: 'Submit Form', route: null},
-        {text: 'Submissions', route: null},
-        {text: 'Info', route: null},
-      ],
+      awaitSubmissionData: false,
+      awaitFormData: false,
+      submissionRefresh: null,
+
       submissions: null,
-      edit: null,
+      optionLoading: null,
+      submission_highlight: null,
+      pagination_history: [],
+      groups: null,
+      users:null,
+      route_submission_id: null,
+
+      selected_organization: null,
+
     }
   },
   computed: {
-    apiUrl() {
-      return this.$store.getters.getApiUrl;
+    route() {
+      return this.$route.name
+    },
+    navTabs() {
+      var navTabs = [
+        {id: 0,text: 'Submissions', route: {name: 'submissions',params: {id:this.$route.params?.id}}},
+        {id: 1, text: 'Submit Form', route: {name: 'submit',params: {id:this.$route.params?.id}}},
+      ]
+      if(this.form?.form_bescheid_settings.length>0) {
+        navTabs = [...navTabs, {id: 2, text: 'Bescheide', route: {name: 'bescheide',params: {id:this.$route.params?.id}}}, {id: 3, text: 'Info', route: {name: 'info',params: {id:this.$route.params?.id}}}]
+      } else {
+      navTabs = [...navTabs, {id: 3, text: 'Info', route: {name: 'info'}}]
+      }
+      return navTabs
     },
   },
-  mounted() {
-    if(!this.$route.params.id) {
-      this.$router.push({name: 'Forms'})
-    }
-    if(localStorage.form) {
-      const form = JSON.parse(localStorage.form)
-      localStorage.removeItem('form')
-      if(form.id==this.$route.params.id) {
-        this.form==form
-        this.awaitData = false
-      }
-    }
+  async mounted() {
+    this.route_submission_id = this.$route.params?.submission_id
+    this.getGroups()
+    this.getUsers()
     if(this.form==null) {
       this.getForm(this.$route.params.id)
     }
-    if(this.submissions==null) {
-      this.getSubmissions(this.$route.params.id)
-    }    
-  },
-  watch: {
-    '$store.state.user': function() {
-      if(this.form==null) {
-        this.getForm(this.$route.params.id)
-      }
-      if(this.submissions==null) {
-        this.getSubmissions(this.$route.params.id)
-      }      
-    }
   },
   methods: {
+  
+    filterOrganization(submissions) {
+      console.log(this.submissions,this.form,this.selected_organization)
+      if(!this.form || !this.form.organization_proxy || this.selected_organization===null) {
+        return submissions
+      }
+      const on_group_permissions = this.form.permissions.group.filter(permission=>permission.agent_type==="App\\Models\\Group" && permission.agent_id===this.selected_organization.id)
+      const on_user_permissions = this.form.permissions.user.filter(permission=>permission.agent_type==="App\\Models\\Group" && permission.agent_id===this.selected_organization.id)
+      const filtered = submissions[this.form.id].map(submission=>{
+        if(submission.owner_type==="App\\Models\\User") {
+          const permission = on_user_permissions.find(u_permission=>u_permission.user_id==submission.owner_id)
+          var max_permission = 0
+          if(permission) {
+            max_permission = permission.permission
+            // return submission
+          }
+          submission.owner.groups.forEach(group=>{
+            const member_permission = on_group_permissions.find(g_permission=>g_permission.group_id==group.id)
+            // console.log(member_permission, submission.owner.groups,on_group_permissions)
+
+            if(member_permission && member_permission.permission>max_permission) {
+              max_permission = member_permission.permission
+            }
+          })
+          const member = this.selected_organization.users.find(u=>u.id===submission.owner_id)
+          if(member && this.form.submissions>max_permission) {
+            max_permission = this.form.submissions
+          }
+          if(max_permission>0) {
+            submission.permission = max_permission
+            return submission
+          }
+        } else if(submission.owner_type==="App\\Models\\Group") {
+          const permission = on_group_permissions.find(g_permission=>g_permission.group_id==submission.owner_id)
+          var max_permission_g = 0
+          if(permission && permission>max_permission) {
+            max_permission_g = permission.permission
+          }
+          if(this.selected_organization.id===submission.owner_id && this.form.submissions>max_permission_g) {
+            max_permission_g = this.form.submissions
+          }
+          if(max_permission_g>0) {
+            submission.permission = max_permission_g
+            return submission
+          }
+        }
+        return null
+      }).filter(submission=>submission!==null)
+      const ret = JSON.parse(JSON.stringify(submissions))
+      ret[this.form.id] = filtered
+      console.log(ret)
+
+      return ret
+    },
+    async getUsers() {
+      if(this.$route.meta.login!=undefined && !this.$route.meta.login) {
+        return
+      }
+      const {users,error} = await this.$store.dispatch('users')
+      console.log(error?.response)
+      this.users = users
+    },
+    async getGroups() {
+      if(this.$route.meta.login!=undefined && !this.$route.meta.login) {
+        return
+      }
+      const {groups,error} = await this.$store.dispatch('groups')
+      console.log(error?.response)
+      this.groups = groups
+    },
+    archive({submissions,archive_groups}) {
+      this.submissions = submissions
+      this.form.archive_groups = archive_groups
+    },
+    dearchive({submissions,archive_groups}) {
+      this.submissions = submissions
+      this.form.archive_groups = archive_groups
+    },
+    timeToDeadline(date) {
+      const deadline = new Date(date)
+      deadline.setDate(deadline.getDate()+1)
+      deadline.setHours(0)
+      deadline.setMinutes(0)
+      const today = new Date()
+      const hours = `${Math.floor((deadline-today) /36e5)}`.padStart(2,'0')
+      const minutes = `${60-today.getMinutes()}`.padStart(2,'0')
+      var show = false
+      if(hours>0 && hours <24) {
+        show = true
+      }
+      return {hours,minutes,show}
+    },
+    deadlinePassed(date) {
+      const deadline = new Date(date)
+      const today = new Date()
+      if((deadline.getFullYear()<today.getFullYear() || deadline.getMonth()<today.getMonth() || deadline.getDate()<today.getDate()) && date!==null) {
+        return true
+      }
+      return false
+    },
+    async newReply(submissions) {
+      this.submissions = submissions
+      return 
+    },
+    async readHistory({pointer}) {
+      this.submission_highlight = this.pagination_history[pointer]?.highlight
+      console.log(this.pagination_history,this.$refs.nav_tabs.history)
+      if(this.submission_highlight) {
+        var count = 0
+        while(this.$refs.view_submissions==null && count<4000) {
+          count += 1
+          await this.$nextTick()
+        }
+        this.$refs.view_submissions.highlight(this.submission_highlight)
+      }
+    },
+    seen(event) {
+      this.submissions[this.form.id] = this.submissions[this.form.id]?.map(sub=>{
+        if(sub.id==event.submission.id) {
+          sub.replies=event.replies
+        }
+        return sub
+      })
+    },
     encodeUrl(url){
       url = url.replaceAll(":", "%3A")
       url = url.replaceAll("/", "%2F")
@@ -87,92 +219,86 @@ export default {
       return url
     },
     updateSubmission(event) {
-      console.log(this.submissions)
-      console.log(event)
-      const index = this.submissions.map(s=>s.id).indexOf(event.id)
-      this.submissions[index] = event
-      this.$refs.navBar.activeTab = 1
-      this.tabIndex = 1
+      this.submissions[this.form.id] = this.submissions[this.form.id].map(s=>{
+        if(s?.id==event?.id) {
+          return event
+        }
+        return s
+      })
+      this.handleSubmit(event)
     },
     addSubmission(event) {
-      if(this.submissions==null){
-        this.submissions=[event]
-        
-      } else {
-        this.submissions.push(event)
+      this.submissions[this.form.id].push(event)
+      this.handleSubmit(event)
+    },
+    async handleSubmit(submission) {
+      this.submission_highlight = submission
+      this.$refs.nav_tabs.history[this.$refs.nav_tabs.history_pointer].route.params = {id:this.$route.params?.id,submission_id: `${submission.id}`}
+      this.$router.push({name:'submissions',params:{id:this.$route.params?.id}})
+      var count = 0
+      while(this.$refs.view_submissions==null && count<2000) {
+        count += 1
+        await this.$nextTick()
       }
-      this.tabIndex = 1
+      this.$refs.view_submissions?.highlight(submission)
+      this.pagination_history[this.$refs.nav_tabs.history_pointer+1] = {highlight:this.submission_highlight}
     },
-    editSubmission(event) {
-      this.edit = {id: event.id, index: event.index}
-      this.tabIndex = 0
-      this.$refs.navBar.activeTab = 0
+    editSubmission(id) {
+      this.$router.push({name: 'submit', params: {submission_id: id, copy: 0}})
     },
-    deleteSubmission(event) {
-      const url = `${this.apiUrl}/submissions/${event.id}`
-      
-      axios({
-        method: 'delete',
-        url: url,
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }        
-      }).then(response=>{
-        this.submissions.splice(event.index, 1)
-        console.log(response.data)
-      }).catch(e=>{
-        console.log(e.response)
-      })
+    copySubmission(id) {
+      this.$router.push({name: 'submit', params: {submission_id: id, copy: 1}})
     },
-    updateTab(index) {
-      this.tabIndex = index
+    async deleteSubmission(id) {
+      this.optionLoading = 1
+      const {submissions,error} = await this.$store.dispatch('_submissions',{method:'delete',submission_id:id,form_id:this.form.id})
+      console.log(error?.response)
+      console.log(this.submissions, submissions)
+      this.submissions[this.form.id]=submissions
+      this.optionLoading = null
     },
-    getForm(id) {
-      this.form = null;
-      this.awaitData = true;
-      const url = `${this.apiUrl}/forms/${id}`
-      axios({
-        method: 'get',
-        url: url,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }).then(response=>{
-        this.form = response.data
-        this.awaitData = false;
-      }).catch(error=>{
-        if(error.response.status==401) {
-          this.handle401()        
-        }
-        console.log(error.response)
-      })
+    async getForm(id) {
+      this.awaitFormData = true
+      const {form,submissions,error} = await this.$store.dispatch('_submissions', {form_id:id})
+      // console.log(form,submissions)
+      this.form = form
+      this.submissions=submissions
+      const action = `Get form with id=${id}`
+      this.handleError(error,action)
+      this.awaitFormData = false
     },
-    handle401(){
+    handleError(error, action) {
+      if(!error?.response) {
+        return
+      }
+      if(error?.response.status===401) {
+        this.emitter.emit('showErrorMessage', {error: error.response, action: action, redirect: this.redirectHome()})
+      } else if(error?.response.status===403) {
+        this.emitter.emit('showErrorMessage', {error: error.response, action: action, redirect: this.redirectLogin()})
+      } else {
+        this.emitter.emit('showErrorMessage', {error: error.response, action: action, redirect: null})
+      }
+    },
+    redirectLogin(){
       var url = `https://www-3.mach.kit.edu/Shibboleth.sso/Login?target=${this.encodeUrl(window.location.href)}`
-      window.location.href = url;
+      return url
     },
-    getSubmissions(formId) {
-      this.submissions = null;
-      this.awaitData = true;
-      const url = `${this.apiUrl}/submissions?form_id=${formId}`
-      axios({
-        method: 'get',
-        url: url,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }).then(response=>{
-        this.submissions = response.data
-        this.awaitData = false;
-      }).catch(error=>{
-        console.log(error.response)
-      })   
-    }
+    redirectHome() {
+      return {name:'Home'}
+    },
   }
 }
 </script>
 
 <style lang="scss" scoped>
+.submit-form-alert-deadline {
+  text-align: left;
+  color: #dc3545;
+}
+.submit-form-alert-close-to-deadline{
+  text-align: left;
+  color: #ffc107;
+}
 .submit-form {
   position: relative;
   width: 100%;
@@ -183,10 +309,8 @@ export default {
 }
 .submit-form-main-content {
   position: relative;
-  background-color: #fff;
+  // background-color: #fff;
   width: 100%;
   height: 100%;
-  padding: 10px 0;
-  // box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
 }
 </style>

@@ -166,18 +166,30 @@ class CustomAuthController extends Controller
     }
 
     public function shibLogin(Request $request) {
-        
         // developement login
-        if(str_starts_with($request->headers->get('origin'), 'http://localhost:')) {
-            Auth::loginUsingId(6);
+        // $user = Auth::loginUsingId(4);
+        $whitelist = [
+            '2a00:1398:4:a000::1:2',
+        ];
+        if(in_array($_SERVER['REMOTE_ADDR'], $whitelist) && str_starts_with($request->headers->get('origin'), 'http://localhost:')) {
+            $user = Auth::loginUsingId(4);
+            // $user = Auth::loginUsingId(6);
+            // $user = Auth::loginUsingId(9);
+            // $user = Auth::loginUsingId(425);
+            // $user = Auth::loginUsingId(12);
+            $user->rightsOnApps();
+            return response()->json($user);
         }
 
         // get server variables containing information send by shibboleth
         $_SERVER = array_map('utf8_encode', $_SERVER);
 
         // check if shibboleth data is present 
-        if(!array_key_exists('shib_id', $_SERVER) && $_SERVER["shib_id"]) {
-            return response('Unauthorized.', 401);
+        if(!array_key_exists('shib_id', $_SERVER) || $_SERVER["shib_id"]===NULL) {
+            $this->logout($request);
+            abort(response()->json([
+                "message"=>"Not logged in",
+            ], 403));
         }
 
         // return currently authenticated user
@@ -198,63 +210,12 @@ class CustomAuthController extends Controller
         $user->rightsOnApps();
         $request->session()->put('Shib-Session-Index', $_SERVER['Shib-Session-Index']);
         return response()->json($user);
-        
-    }
-
-    public function shibLogin2() {
-
-        $_SERVER = array_map('utf8_encode', $_SERVER);
-        $request = request();
-        if(str_starts_with($request->headers->get('origin'), 'http://localhost:')) {
-            Auth::loginUsingId(9);
-        }
-
-        if(Auth::check()) {
-            $settings = $this->getSettings();
-            $controller = 'AppController';
-            $method = 'index';
-            $rightsController = new Rights();
-            $appRights = $rightsController->getAppRights();
-            return response()->json(['user'=>Auth::user(), 'settings'=>$settings, 'apps'=>app('App\Http\Controllers\API\AppController')->indexLocal($appRights)]);
-        }
-
-        if(!array_key_exists('shib_id', $_SERVER) && $_SERVER["shib_id"]) {
-            return response('Unauthorized.', 401);
-        }
-        $shibId = ['shib_id' => explode('@', $_SERVER['shib_id'])[0]];
-        $shibAttributes = $this->getShibAttributes();
-        if($user = User::firstOrCreate($shibId, $shibAttributes)){
-            if($this->shibAttributesChanged($user->toArray(), $shibAttributes)) {
-                $this->updateValues($user, $shibAttributes);
-                $user->save();
-            }
-            $groupIds = [];
-            foreach($shibAttributes['memberOf'] as $group) {
-                $groupName = ['name' => $group];
-                $group = Group::firstOrCreate($groupName);
-                $groupIds[] = $group->id;
-            }
-
-            $user->groups()->sync($groupIds);
-            Auth::login($user, false);
-
-            $settings = $this->getSettings();
-            $controller = 'AppController';
-            $method = 'index';
-            $rightsController = new Rights();
-            // $appRights = $rightsController->getRightsAPI($controller, $method);          
-            $appRights = $rightsController->getAppRights();  
-            return response()->json(['user'=>Auth::user(), 'settings'=>$settings, 'apps'=>app('App\Http\Controllers\API\AppController')->indexLocal($appRights)]);
-        } else {
-            return response('Unauthorized.', 401);
-        }
-
     }
 
     public function logout(Request $request) {
-        Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        // return response()->json(Auth::user());
         return response()->json('logout');
     }
 

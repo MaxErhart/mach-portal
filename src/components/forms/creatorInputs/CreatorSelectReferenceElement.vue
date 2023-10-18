@@ -2,7 +2,7 @@
   <div class="creator-input-element" :class="{edit: edit}">
     <div class="clickable-overlay" :class="{edit: edit}"></div>
 
-    <SelectReferenceElement :data="selectData" :formId="sourceForm==null ? null : sourceForm.id" :displayId="sourceDisplay==null ? null : sourceDisplay.id" :nameAsValue="true"/>
+    <SelectReferenceElement :required="required" :label="label" :formId="sourceForm ? sourceForm.id:null" :formElementIds="sourceElementIds"/>
 
 
     <div class="form-item-buttons no-drag">
@@ -16,46 +16,43 @@
 
     <div class="edit-element" :class="{active: edit}">
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Label', type: 'text', required: true}" :name="`${name}_label_data`" @valueChange="label=$event" :presetValue="label"/>
+        <InputElement label="Edit Label" type="text" :required="true" @valueChange="label=$event" :presetValue="label"/>
       </section> 
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Tooltip', type: 'text', required: false}" :name="`${name}_tooltip_data`" @valueChange="tooltip=$event" :presetValue="tooltip"/>
+        <InputElement label="Edit Tooltip" type="text" :required="false" @valueChange="tooltip=$event" :presetValue="tooltip"/>
       </section>
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Placeholder', type: 'text', required: false}" :name="`${name}_placeholder_data`" @valueChange="placeholder=$event" :presetValue="placeholder"/>
+        <InputElement label="Edit Placeholder" type="text" :required="false" @valueChange="placeholder=$event" :presetValue="placeholder"/>
       </section>        
       <section class="label-section">
-        <Checkbox :data="{label: 'Required', required: false}" :name="`${name}_required_data`" @inputChange="required=$event" :presetValue="required"/>
+        <Checkbox label="Required" :required="false" @inputChange="required=$event" :presetValue="required"/>
       </section>
       <section class="show-section">
-        <Checkbox :data="{label: 'Show Column for Submissions', required: false}" :name="`${name}_show_data`" @inputChange="show=$event" :presetValue="show"/>
-      </section>    
-      <section class="source-select">
-        <SelectElement :data="sourceSelectData" :name="`${name}_formId_data`" :nameAsValue="false" :dynamic="false" @selectedEntry="selectSourceForm($event)" :presetValue="sourceForm==null ? null : sourceForm.name"/>
+        <Checkbox label="Show Column in Submissions" :required="false" @inputChange="show=$event" :presetValue="show"/>
       </section>
-      <section class="source-display" v-if="sourceForm!==null">
-        <SelectElement :data="sourceDisplayData" :name="`${name}_displayId_data`" :nameAsValue="false" :dynamic="false" :nameCast="(v)=>v.data.label" @selectedEntry="selectSourceDisplay($event)" :presetValue="sourceDisplay==null ? null : sourceDisplay.data.label"/>
+      <section class="show-section">
+        <Checkbox label="Enable search options" type="text" :required="false" @inputChange="search=$event" :presetValue="search"/>
+      </section>  
+      <section class="source-select">
+        <SelectElement label="Select source form" :search="true" :required="true" :data="parseForms(forms)"  @selectedEntry="selectSourceForm($event)" :presetValue="sourceForm==null ? null : sourceForm.id"/>
       </section>
       <section>
-        <MultiSelectElement label="Select information to display" :required="false" :name="`${name}_displayFormIds_data`" :data="sourceForm==null ? null : sourceForm.form_elements" :preset="null" />
+        <MultiSelectElementBox :presetValue="refFormElPreset" @change="setFormElements($event)" label="Select submission information to display" :cast="formElementCast" :required="true" :data="sourceForm?filterInputElements(sourceForm.form_elements):null"/>
       </section>
       <section class="hidden-section">
-        <input type="hidden" :name="`${name}_component`" value="SelectReferenceElement">
-        <input type="hidden" :name="`${name}_position`" :value="position">
-        <input type="hidden" :name="`${name}_id`" :value="id ? id : null">
+        <input type="hidden" :name="name" :value="JSON.stringify(elementData)">
       </section>      
     </div>
   </div>
 </template>
-
 <script>
+// sourceForm?sourceForm.form_elements.filter(e=>sourceElementIds.includes(e.id)):null
+
 import InputElement from '@/components/inputs/InputElement.vue'
 import SelectElement from '@/components/inputs/SelectElement.vue'
 import SelectReferenceElement from '@/components/inputs/SelectReferenceElement.vue'
 import Checkbox from '@/components/inputs/Checkbox.vue'
-import MultiSelectElement from '@/components/inputs/MultiSelectElement.vue'
-
-import axios from "axios";
+import MultiSelectElementBox from '@/components/inputs/MultiSelectElementBox.vue'
 export default {
   name: 'CreatorSelectReferenceElement',
   components: {
@@ -63,7 +60,7 @@ export default {
     SelectElement,
     SelectReferenceElement,
     Checkbox,
-    MultiSelectElement,
+    MultiSelectElementBox,
   },
   props: {
     id: Number,
@@ -83,131 +80,96 @@ export default {
       selections: [''],
       show: true,
       forms: null,
+      search: true,
       sourceForm: null,
-      sourceDisplay: null,
-      inputElements: ["InputElement", "SelectElement", "Checkbox", "MultiSelectElement"],
+      sourceElementIds: [],
+      inputElements: ["InputElement", "SelectElement", "Checkbox", "MultiSelectElementBox","SelectReferenceElement"],
     }
   },
   mounted() {
     this.getForms();
-
     if(this.presetData) {
-      this.label=this.presetData.label
-      this.tooltip=this.presetData.tooltip
-      this.placeholder=this.presetData.placeholder
-      this.numOptions=Number(this.presetData.numoptions)
-      this.required=this.presetData.required=='true'?true:false
-      this.show=Boolean(Number(this.presetData.show))
-      if(this.numOptions>0) {
-        this.selections[0] = this.presetData['0']
-        for(var i=1; i<this.numOptions; i++) {
-          this.selections.push(this.presetData[`${i}`]) 
-        }        
-      }
+      this.setPresets(this.presetData)
     }
   },
   watch: {
     presetData(to) {
-      this.label=to.label
-      this.tooltip=to.tooltip
-      this.placeholder=this.presetData.placeholder
-      this.numOptions=Number(to.numoptions)
-      this.required=to.required=='true'?true:false
-      this.show=Boolean(Number(this.presetData.show))
-      if(this.numOptions>0) {
-        this.selections[0] = this.presetData['1']
-        for(var i=1; i<this.numOptions; i++) {
-          this.selections.push(this.presetData[`${i+1}`]) 
-        }        
-      }
-
+      this.setPresets(to)
     }
   },  
   computed: {
+    refFormElPreset() {
+      const elements = []
+      this.sourceElementIds.forEach(id=>{
+        const element = this.sourceForm?.form_elements[this.sourceForm.id][id]
+        if(element) {
+          elements.push(element)
+        }
+      })
+      console.log(this.sourceElementIds,elements)
+      return elements
+    },
+    elementData() {
+      return {
+        component: 'SelectReferenceElement',
+        position: this.position,
+        id: this.id,
+        show: this.show,
+        input: true,
+        data: {show: this.show,search:this.search,formId: this.sourceForm?this.sourceForm.id:null, formElementIds: this.sourceElementIds, label: this.label, required: this.required, placeholder: this.placeholder, tooltip: this.tooltip},
+      }
+    },
     apiUrl() {
       return this.$store.getters.getApiUrl;
     },
-    sourceDisplayData() {
-      var data = {label: 'Select source field to display', required: true, placeholder: '', tooltip: ''}
-      if(this.sourceForm!==null) {
-        this.sourceForm.form_elements.forEach((v, i)=>{
-          if(this.inputElements.includes(v.component)) {
-            data[String(i)]=v
-          }
-        })
-      }
-      return data
-    },
-    sourceSelectData() {
-      var data = {label: 'Select source form', required: true, placeholder: '', tooltip: ''}
-      if(this.forms!==null) {
-        this.forms.forEach((v, i)=>{
-          data[String(i)]=v
-        })
-      }
-      return data
-    },
-    selectData() {
-      var data = {label: this.label, required: this.required, placeholder: this.placeholder, tooltip: this.tooltip}
-      this.options.forEach((v, i)=>{
-        data[String(i)]=v
-      })
-      return data
-    },    
-    options() {
-      var options = []
-      var i = 0
-      this.selections.forEach(e=>{
-        var newOption = {id: i, name: e}
-        options.push(newOption)
-        i++
-      })
-      return options
-    },
-    style() {
-      var style = {'color': `${this.color}`}
-      if(this.underline) {
-        style['text-decoration'] = 'underline'
-      }
-      return style
-    },
   },
   methods: {
-    selectSourceForm(e) {
-      this.sourceForm = e
-      console.log(this.sourceForm)
-    },
-    selectSourceDisplay(e) {
-      this.sourceDisplay = e
-    },
-    getForms() {
-      this.forms=[];
-      this.fetchedAllData = true;
-      this.awaitData = true;
-      const url = `${this.apiUrl}/forms`;
-      axios({
-        method: 'get',
-        url: url,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }).then(response=>{
-        this.forms = this.forms.concat(response.data);
-        this.awaitData = false;
-        if(this.presetData) {
-          this.sourceForm = this.forms.filter(f=>f.id==this.presetData.formId)[0]
-          this.sourceDisplay = this.sourceForm.form_elements.filter(e=>e.id==this.presetData.displayId)[0]
-        }
+    parseForms(forms) {
+      const object = {}
+      forms?.forEach(form=>{
+        object[form.id] = form
       })
-    },    
-    updateNumOptions(e){
-      if(Number(e)>this.numOptions.length) {
-        for(var i=this.numOptions.length; i<Number(e);i++){
-          this.selections.push('')
-        }
-      }
-      this.numOptions=Number(e)
+      return object
     },
+    setPresets(data) {
+      this.label=data.data.label
+      this.tooltip=data.data.tooltip
+      this.placeholder=data.data.placeholder
+      this.required=data.data.required
+      this.show=data.data.show
+      this.search=data.data.search
+      this.sourceElementIds=data.data.formElementIds
+    },
+    setFormElements(elements) {
+      this.sourceElementIds = elements.map(el=>el.id)
+    },
+    filterInputElements(elements) {
+      const inputs = []
+      Object.keys(elements[this.sourceForm.id]).forEach(el_id=>{
+        const element = elements[this.sourceForm.id][el_id]
+        if(!element.input || element.form_id!=this.sourceForm?.id) {
+          return
+        }
+        inputs.push(element)
+      })
+      return inputs
+    },
+    formElementCast(element) {
+      return {id: element.id, name: element.data.label}
+    },
+    selectSourceForm(e) {
+      this.sourceForm = this.forms.find(f=>f.id==e.id)
+    },
+    async getForms() {
+      this.awaitData = true
+      const {forms,error} = await this.$store.dispatch('_forms', {method: 'get'})
+      console.log(forms,error,error?.response)
+      this.forms = forms
+      if(this.presetData) {
+        this.sourceForm = this.forms.find(f=>f.id==this.presetData.data.formId)
+      }
+      this.awaitData = false
+    },   
     deleteItem() {
       this.$emit("deleteItem", this.formCratorIdentifier)
     },    

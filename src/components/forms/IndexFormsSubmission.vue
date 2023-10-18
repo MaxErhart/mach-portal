@@ -124,7 +124,7 @@ export default {
     },
     selectElement(event, id) {
       localStorage.form = JSON.stringify(this.forms.filter(f=>f.id==id)[0])
-      this.$router.push({name: 'SubmitForm', params: {id: id}})
+      this.$router.push({name: 'submissions', params: {id: id}})
     },  
   },
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Casts\TimeCast;
 
 class EntranceExam extends Model
 {
@@ -23,7 +24,7 @@ class EntranceExam extends Model
 
     protected $casts = [
         'exam_date' => 'date:d.m.Y',
-        'exam_time' => 'datetime:H:i',
+        'exam_time' => TimeCast::class,
         'deadline' => 'date:d.m.Y',
         'current' => 'boolean',
     ]; 

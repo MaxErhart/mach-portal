@@ -1,35 +1,50 @@
 <template>
 
-  <div class="button" :class="{error: error}">
-    <button class="submit-button" :class="{loading: loading, disabled: disabled}" :disabled="error || disabled || loading">
+  <div class="button" :class="{error: error, 'error-message': errorMessage, stretch,disabled: error || disabled || loading}" :style="{'--bg-color': bgColor, '--color': color}">
+    <button class="submit-button" :class="{loading, stretch}" :disabled="error || disabled || loading">
       <template v-if="loading">
         <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
       </template>
-      <template v-else>{{text}}</template>
+      <span class="button-text" :class="{loading}">{{text}}
+        <div class="circle" :class="{animate: success, stretch}">
+          <ion-icon class="check-icon" name="checkmark-outline"></ion-icon>
+          <span>Success!</span>
+        </div>
+      </span>
     </button>
-    <div class="circle" :class="{animate: success}">
-      <IconButton class="checkmark" icon="checkmark" text="" :width="24" :height="24" :noHover="true"/>
-      <span>Success!</span>
-
-    </div>
+    <Transition name="slide">
+      <div class="input-error" v-if="errorMessage">
+        {{errorMessage}}
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script>
-import IconButton from '@/components/IconButton.vue'
 export default {
   name: 'Button',
-  components: {
-    IconButton,
-  },
   props: {
+    bgColor: {
+      default: '#00876c',
+      type: String,
+    },
+    color: {
+      default: '#ffffff',
+      type: String,
+    },
+    stretch: {
+      default: false,
+      type: Boolean,
+    },
     loading: Boolean,
     disabled: Boolean,
     text: String,
   },
+  emits: ['buttonClick'],
   data() {
     return {
       error: false,
+      errorMessage: null,
       success: false,
     }
   },
@@ -47,50 +62,130 @@ export default {
         setTimeout(()=>{
           this.success=false
         },
-        2500)
+        3500)
       }
     }
   },
   computed: {
 
+  },
+  methods: {
   }
 }
 </script>
 
 
 <style scoped lang="scss">
-@import 'D:\\inetpub\\MPortal\\src\\_variables';
+.button-text {
+  user-select: none;
+}
+.input-error {
+  width: 100%;
+  position: absolute;
+  font-size: 12px;
+  color: #ff1744;
+  text-align: start;
+  height: 12px;
+  bottom: 0;
+  z-index: 0;
+  transform: translateY(100%);
+}
+.slide-enter-active {
+  transition: .3s cubic-bezier(.4,0,.2,1);
+}
+.slide-enter-from {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+.slide-leave-to {
+  opacity: 1;
+  transform: translateY(0%);
+}
 .circle {
+  position: absolute;
   > * {
     margin: 0 2px;
   }
+  .check-icon {
+    font-size: 2rem;
+    color: #2C3E50;
+  }
+  &.stretch {
+    color: var(--color);
+    .check-icon {
+      color: var(--color);
+    }
+  }
+  color: #2C3E50;
+  right: 0;
+  top: 50%;
+  transform: translate(calc(100% + 16px), -50%);
   border: none;
-  display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
-  // width: 38px;
   border-radius:50%;
   opacity: 0;
+  display: none;
   &:not(.animate) {
     transition: opacity 400ms;
   }
   &.animate {
+    display: flex;
     opacity: 1;
   }
 }
 .button {
+  position: relative;
+  &.disabled {
+    cursor: not-allowed !important;
+    filter: grayscale(75%);
+  }
+  &.stretch {
+    width: 100%;
+  }
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  min-width: 96px;
   &.error {
     animation: error 0.4s linear;
   }
+  // &.error-message {
+  //   margin: 2px 0 0 0;
+  // }
 }
 .submit-button {
-  margin-right: 12px;
+  position: relative;
+  z-index: 1;
+  span {
+    position: relative;
+    &.loading {
+      opacity: 0;
+    }
+  }
+  padding: 0 8px;
+  background-color: var(--bg-color);
+  color: var(--color);
+  min-height: 38px;
+  height: 100%;
+  position: relative;
+  font-weight: 500;
+  cursor: pointer;
+  &.stretch {
+    width: 100%;
+  }
 }
 .lds-ring {
-  position: relative;
-  transform: translate(-14px, -14px);
+  left: 50%;
+  top: 50%;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  transform: translate(0, -14px);
 }
 .lds-ring div {
   box-sizing: border-box;

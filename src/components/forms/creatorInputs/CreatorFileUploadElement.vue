@@ -1,7 +1,6 @@
 <template>
   <div class="creator-input-element" :class="{edit: edit}">
     <div class="clickable-overlay" :class="{edit: edit}"></div>
-
     <div class="item">
       <label for="input-field">{{label}}</label>
       <input id="file-input" type="file">
@@ -22,22 +21,22 @@
     </div>    
     <div class="edit-element" :class="{active: edit}">
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Label', type: 'text', required: true}" :name="`${name}_label_data`" @valueChange="label=$event" :presetValue="label"/>
+        <InputElement label='Edit Label' type='text' :required="true" @valueChange="label=$event" :presetValue="label"/>
       </section>
       <section class="tooltip-section">
-        <InputElement :data="{label: 'Edit tooltip', type: 'text', required: false}" :name="`${name}_tooltip_data`" @valueChange="tooltip=$event" :presetValue="tooltip"/>
+        <InputElement label='Edit tooltip' type='text' :required="false" @valueChange="tooltip=$event" :presetValue="tooltip"/>
       </section>      
       <section class="path-section">
-        <InputElement :data="{label: 'Edit Path', type: 'text', required: true}" :name="`${name}_path_data`" @valueChange="path=$event" :presetValue="path"/>
+        <InputElement label='Edit Path' type='text' tooltip="Path relative to 'D:\inetpub\MPortal\dfiles'" :required="true" @valueChange="path=$event" :presetValue="path"/>
       </section>      
       <section class="required-section">
-        <Checkbox :data="{label: 'Required', required: false}" :name="`${name}_required_data`" @inputChange="required=$event" :presetValue="required"/>
+        <Checkbox label='Required' :required="false" @inputChange="required=$event" :presetValue="required"/>
       </section>
-    
+      <section class="show-section">
+        <Checkbox label="Show Column in Submissions" :required="false" @inputChange="show=$event" :presetValue="show"/>
+      </section> 
       <section class="hidden-section">
-        <input type="hidden" :name="`${name}_component`" value="FileUploadElement">
-        <input type="hidden" :name="`${name}_position`" :value="position">
-        <input type="hidden" :name="`${name}_id`" :value="id ? id : null">
+        <input type="hidden" :name="name" :value="JSON.stringify(elementData)">
       </section>      
     </div>
   </div>
@@ -45,7 +44,6 @@
 
 <script>
 import InputElement from '@/components/inputs/InputElement.vue'
-// import SelectElement from '@/components/inputs/SelectElement.vue'
 import Checkbox from '@/components/inputs/Checkbox.vue'
 export default {
   name: 'CreatorHeaderElement',
@@ -64,30 +62,40 @@ export default {
   data() {
     return {
       label: 'File',
-      required: true,
+      required: false,
       tooltip: '',
       path: 'D:\\inetpub\\MPortal\\dfiles\\forms',
-
       edit: false,
+      show: true,
     }
   },
   mounted() {
     if(this.presetData) {
-      this.label=this.presetData.label
-      this.tooltip=this.presetData.tooltip
-      this.path=this.presetData.path
-      this.required=this.presetData.required=='true'?true:false
+      this.matchPresets(this.presetData)
     }
   },
   watch: {
     presetData(to) {
-      this.label=to.label
-      this.tooltip=to.tooltip
-      this.path=to.path
-      this.required=to.required=='true'?true:false
+      this.matchPresets(to)
     }
   },  
   computed: {
+    elementData() {
+      return {
+        component: 'FileUploadElement',
+        position: this.position,
+        id: this.id,
+        show: this.show,
+        input: true,
+        data: {
+          show: this.show,
+          path: this.path,
+          label: this.label,
+          tooltip: this.tooltip,
+          required: this.required
+        }
+      }
+    },
     style() {
       var style = {'color': `${this.color}`}
       if(this.underline) {
@@ -97,6 +105,13 @@ export default {
     },
   },  
   methods: {
+    matchPresets(value) {
+      this.label=value.data.label
+      this.tooltip=value.data.tooltip
+      this.path=value.data.path
+      this.show=value.show
+      this.required=value.data.required
+    },
     test(e){
       console.log(e)
     },

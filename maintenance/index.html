@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+html *{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+body {
+  padding: 0;
+  margin: 0;
+  height: 100vh;
+  font-family: 'Quicksand', sans-serif;
+}
+body p {
+  font-size: 18px;
+}
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20vh;
+  gap: 20px;
+}
+#header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+#header h4 {
+  font-size: 18px;
+}
+#body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  max-width: 210mm;
+}
+a {
+  position: relative;
+  color: #00876c;
+  font-weight: 500;
+  text-decoration: none;
+}
+a::after {
+  position: absolute;
+  content: "";
+  width: 15%;
+  border-bottom: 1px solid #00876c;
+  left: 0;
+  bottom: 0;
+  transform: scaleY(1.6);
+  transition: width 250ms ease-in-out;
+}
+a:hover::after {
+  width: 100%;
+}
+</style>
+  </head>
+  <body>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <div id="app">
+      <div id="header">
+        <h1>503 Maintenance</h1>
+          <h4 v-if="enddate">Expect end by {{enddate}}</h4>
+      </div>
+      <div id="body">
+        <p v-if="customMessage">{{customMessage}}</p>
+        <p v-else>{{message.one}}</p>
+        <p>{{message.two.message}}<a :href="message.two.href">{{message.two.name}}</a></p>
+        <p>{{message.three}}</p>
+        <p>{{message.name}}</p>
+      </div>
+
+    </div>
+    <script>
+      const { createApp } = Vue
+      createApp({
+        data() {
+          return {
+            message: {
+              one: 'We apologize for the inconvenience, but our server is currently undergoing maintenance. We are working to improve the service and will be back online as soon as possible.',
+              two: {
+                message: 'Please check back later or contact us for more information at: ',
+                href: 'mailto: portal@mach.kit.edu',
+                name: 'portal@mach.kit.edu'
+              },
+              three: 'Thank you for your patience and understanding.',
+              name: 'The Department of Mechanical Engineering'
+            },
+            enddate: null,
+            customMessage: null,
+          }
+        },
+        mounted() {
+          axios({
+            method: 'get',
+            url: 'https://www-3.mach.kit.edu/api/shib/mach-api/public/index.php/api/meta',
+          }).then(response=>{
+            console.log(response.data)
+            this.enddate = response.data.maintenance_enddate
+            this.customMessage = response.data.maintenance_message
+          }).catch(error=>{
+            if(error.response.status===503) {
+              this.enddate = error.response.data.meta.maintenance_enddate
+              this.customMessage = error.response.data.meta.maintenance_message
+            }
+          })
+        },
+      }).mount('#app')
+    </script>
+  </body>
+</html>

@@ -1,153 +1,1032 @@
 import { createStore } from 'vuex'
 import axios from 'axios';
+
+
+
+function actionDeleteFactory(identifier, {commit, state}) {
+    async function action({key=null, cacheByKey=true, id=null,deep=null}={}) {
+        const identifierSingle = identifier.substring(0, identifier.length - 1)
+        
+        var url = `${state.apiUrl}/${identifier}/${id}`
+        const {data, error} = await axios({
+            method: 'delete',
+            url: url,
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+        }).catch(error=>{
+            return {data:null,error}
+        })
+        if(!error && data!==null) {
+            commit('clearWhere', {identifier, identifierSingle, cacheByKey, key, id,deep})
+        }
+        return {[identifier]:data, error}
+    }
+    return action
+}
+
+
+function actionUpdateFactory(identifier, {commit, state}) {
+    async function action({key=null, cacheByKey=true, formData=null, id=null,deep=null}={}) {
+        const identifierSingle = identifier.substring(0, identifier.length - 1)
+        
+        var url = `${state.apiUrl}/${identifier}/${id}`
+        const {data, error} = await axios({
+            method: 'post',
+            url: url,
+            data: formData,
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+        }).catch(error=>{
+            return {data:null,error}
+        })
+        if(!error && data!==null) {
+            commit('setWhere', {identifier, identifierSingle, [identifierSingle]:data, cacheByKey, key, id,deep})
+        }
+        return {[identifierSingle]:data, error}
+    }
+    return action
+}
+
+function actionPostFactory(identifier, {commit, state}) {
+    async function action({key=null, cacheByKey=true, formData=null,deep=null}={}) {
+        const identifierSingle = identifier.substring(0, identifier.length - 1)
+        
+        var url = `${state.apiUrl}/${identifier}`
+        const {data, error} = await axios({
+            method: 'post',
+            url: url,
+            data: formData,
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+        }).catch(error=>{
+            return {data:null,error}
+        })
+        if(!error && data!==null) {
+            commit('setWhere', {identifier, identifierSingle, [identifierSingle]:data, cacheByKey, key, id: data.id,deep})
+        }
+        return {[identifierSingle]:data, error}
+    }
+    return action
+}
+
+
+function refreshFactory(identifier, dispatch) {
+    async function refresh({id=null,cacheByKey=true,key=null,get=null,deep=null}={}) {
+        const data = await dispatch(identifier, {id,cacheByKey,key,get,refreshData:true,deep})
+        return data
+    }
+    return refresh
+}
+function actionGetFactory(identifier, {dispatch, commit, state}) {
+    async function action({key=null,id=null,get=null,cacheByKey=true,refreshData=false,deep=null}={}) {
+
+        const refresh = refreshFactory(identifier, dispatch)
+        const hasId = id!==null&&id!==undefined
+        const identifierSingle = identifier.substring(0, identifier.length - 1)
+        id = parseInt(id)
+        
+        if(hasId && cacheByKey && !refreshData) {
+            const index1 = state[identifier].dataByKey[key]?.findIndex(obj=>obj?.id===id)
+            if(index1>=0) {
+                return {[identifierSingle]: state[identifier].dataByKey[key][index1], refresh, error: null}
+            }
+
+            const singleExists1 = key in state[identifierSingle].dataByKey && id in state[identifierSingle].dataByKey[key]
+            if(singleExists1) {
+                return {[identifierSingle]: state[identifierSingle].dataByKey[key][id], refresh, error: null}
+            }
+        }
+
+        if(hasId && !cacheByKey && !refreshData) {
+            const index2 = state[identifier].prevData.findIndex(obj=>obj.id===id)
+            if(index2>=0 && state[identifier].prevKey===key) {
+                return {[identifierSingle]: state[identifier].prevData[index2], refresh, error: null}
+            }
+            
+            const singleExists2 = state[identifierSingle].prevKey[id]===key && state[identifierSingle].firstFetch[id]
+            if(singleExists2) {
+                return {[identifierSingle]: state[identifierSingle].prevData[id], refresh, error: null}
+            }
+        }
+
+        if(!hasId && cacheByKey && key in state[identifier].dataByKey && !refreshData) {
+            return {[identifier]: state[identifier].dataByKey[key], refresh, error: null}
+        }
+
+        if(!hasId && !cacheByKey && state[identifier].firstFetch && state[identifier].prevKey===key && !refreshData) {
+            return {[identifier]: state[identifier].prevData, refresh, error: null}
+        } 
+
+        var url = `${state.apiUrl}/${identifier}`
+        if(hasId) {
+            url+=`/${id}`
+        }
+        if(get) {
+            Object.keys(get).forEach((key,index)=>{
+                if(index===0) {
+                    url+=`?${key}=${get[key]}`
+                    return
+                }
+                url+=`&${key}=${get[key]}`
+            })
+        }
+        const {data, error} = await axios({
+            method: 'get',
+            url: url
+        }).catch(error=>{
+            return {data:null,error}
+        })
+        if(!error && data!==null) {
+            if(hasId) {
+                commit('setWhere', {identifier, identifierSingle, [identifierSingle]:data, cacheByKey, key, id,deep})
+            } else {
+                commit('set', {identifier, [identifier]:data, cacheByKey, key})
+            }
+        }
+        if(hasId) {
+            return {[identifierSingle]:data, refresh, error}
+        } else {
+            return {[identifier]:data, refresh, error}
+        }
+    }
+    return action
+}
+
+
 export default createStore({
     state: {
-        currentRoute: {route: '/', name: 'Home', topic: 'home', icon: 'm12,1.25552l-11.96916,10.99779l3.7578,0l0,10.49117l16.42272,0l0,-10.49117l3.7578,0l-11.96916,-10.99779z'},
-        routes: [
-        {route: '/', name: 'Home', topic: 'home', icon: 'm12,1.25552l-11.96916,10.99779l3.7578,0l0,10.49117l16.42272,0l0,-10.49117l3.7578,0l-11.96916,-10.99779z'},
-        {route: '/theses', name: 'Theses', topic: 'theses', icon: 'm3.9009,11.86368l0,4.55911a7.92787,3.96393 0 0 0 7.92787,3.96394a7.92787,3.96393 0 0 0 7.92787,-3.96394l0,-4.55911l-7.92787,3.56812l-3.96394,-1.78454l0,2.77553l-0.99098,-0.99098l-0.99098,0.99098l0,-3.66683l-1.98196,-0.89227zm3.68819,-8.25041l4.29567,0l11.8918,5.35131l-11.8918,5.35131l-11.8918,-5.35131l11.8918,-5.35131l-4.29567,0z'},
-        {route: '/dashboard', name: 'Dashboard', topic: 'dashboard', icon: 'M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z'},
-        {route: '/about', name: 'About', topic: 'about', icon: 'M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z'},
-        {route: '/rights', name: 'Edit Rights', topic: 'editRights', icon: 'm9.33135,0.24096c-3.44696,0 -6.26053,2.81357 -6.26053,6.26053c0,2.15722 1.10156,4.07118 2.76767,5.19569c-3.18993,1.36777 -5.44813,4.53475 -5.44813,8.2158l1.79003,0c0,-3.96102 3.19452,-7.15555 7.15555,-7.15555c1.91855,0 3.63056,0.78486 4.91571,2.01035l-4.21805,4.21805l-0.05508,0.27998l-0.61504,3.1578l-0.27998,1.31269l1.31269,-0.27998l3.1578,-0.61504l0.27998,-0.05508l9.02361,-9.02361c1.0373,-1.0373 1.0373,-2.76308 0,-3.80038c-0.51865,-0.51865 -1.21172,-0.78027 -1.90019,-0.78027c-0.67471,0 -1.354,0.25703 -1.87265,0.75273l-3.54794,3.54794c-0.78027,-0.74814 -1.70283,-1.35859 -2.71259,-1.79003c1.66611,-1.12451 2.76767,-3.03847 2.76767,-5.1911c0,-3.44696 -2.81357,-6.26053 -6.26053,-6.26053zm0,1.79003c2.47851,0 4.47049,1.99199 4.47049,4.47049s-1.99199,4.47049 -4.47049,4.47049s-4.47049,-1.99199 -4.47049,-4.47049s1.99199,-4.47049 4.47049,-4.47049zm11.62604,8.94099c0.2249,0 0.46357,0.07344 0.64258,0.25244c0.35801,0.35801 0.35801,0.89961 0,1.25761l-8.6656,8.66101l-1.59267,0.33506l0.33506,-1.59267l8.66101,-8.66101c0.18359,-0.179 0.39014,-0.25244 0.61963,-0.25244z'},
-        {route: '/form', name: 'View Forms', topic: 'viewForm', icon: 'm6.62307,0.16328l15.90642,0l0,2.39394l-15.90642,0l0,-2.39394zm-5.37307,0l2.97913,0l0,2.39394l-2.97913,0l0,-2.39394zm5.37307,5.31988l15.90642,0l0,2.39394l-15.90642,0l0,-2.39394zm-5.37307,0l2.97913,0l0,2.39394l-2.97913,0l0,-2.39394zm5.37307,5.31987l15.90642,0l0,2.39394l-15.90642,0l0,-2.39394zm-5.37307,0l2.97913,0l0,2.39394l-2.97913,0l0,-2.39394zm0.22052,5.31988l2.97913,0l0,2.39394l-2.97913,0l0,-2.39394zm5.15256,5.31987l15.90642,0l0,2.39394l-15.90642,0l0,-2.39394zm-5.15256,0l2.97913,0l0,2.39394l-2.97913,0l0,-2.39394zm5.37307,-5.31987l15.90642,0l0,2.39394l-15.90642,0l0,-2.39394z'},
-        {route: '/createform', name: 'Create Form', topic: 'createForm', icon: 'm16.4695,22.23618l-14.65185,0l0,-20.56184l14.6518,0l0,5.09679l1.56197,-1.56202l0,-4.31577c0.00005,-0.43129 -0.34969,-0.78099 -0.78094,-0.78099l-16.21382,0c-0.43134,0 -0.78113,0.34969 -0.78113,0.78099l0,22.12391c0,0.43129 0.34974,0.78099 0.78113,0.78099l16.21382,0c0.43124,0 0.78099,-0.34969 0.78099,-0.78099l0,-8.59422l-1.56197,1.56202l0,6.25112l0,0.00001z m-2.03,-18.69l-10.04671,0c-0.32942,0 -0.59675,0.26732 -0.59675,0.59685c0,0.32947 0.26732,0.5968 0.59675,0.5968l10.04666,0c0.32952,0 0.5968,-0.26732 0.5968,-0.5968c0.00005,-0.32952 -0.26727,-0.59685 -0.59675,-0.59685z m0.62,3.78c0,-0.32947 -0.26732,-0.59685 -0.5968,-0.59685l-10.04671,0c-0.32942,0 -0.59675,0.26737 -0.59675,0.59685c0,0.32952 0.26732,0.59685 0.59675,0.59685l10.04666,0c0.32952,0 0.59685,-0.26727 0.59685,-0.59685z m-1.43,2.58l-9.20704,0c-0.32942,0 -0.59675,0.26737 -0.59675,0.59685c0,0.32952 0.26732,0.5968 0.59675,0.5968l8.01335,0l1.1937,-1.19365l-0.00001,0z m-3.4,3.96c0.08078,-0.27045 0.19622,-0.52959 0.33684,-0.77362l-6.20533,0c-0.32942,0 -0.59675,0.26732 -0.59675,0.59685c0,0.32947 0.26732,0.59685 0.59675,0.59685l5.74337,0l0.12512,-0.42007l0,-0.00001z m-5.75,2.41c-0.32942,0 -0.59675,0.26732 -0.59675,0.59685c0,0.32942 0.26732,0.5968 0.59675,0.5968l5.24252,0c-0.15468,-0.37531 -0.19468,-0.78994 -0.08545,-1.19365l-5.15706,0l-0.00001,0z m18.8,-11.65c-0.31272,-0.31286 -0.73674,-0.48844 -1.17848,-0.48844c-0.44174,0 -0.86566,0.17557 -1.17805,0.48805l-8.82977,8.83001c-0.24094,0.24085 -0.41767,0.53734 -0.51525,0.86374l-0.70362,2.35861c-0.02994,0.09985 -0.00274,0.20787 0.0711,0.28172c0.05402,0.05407 0.12632,0.08314 0.20046,0.08314c0.02687,0 0.0544,-0.00385 0.08126,-0.01199l2.35846,-0.70372c0.32649,-0.09753 0.62299,-0.27435 0.86379,-0.5152l8.83006,-8.82967c0.31238,-0.31243 0.48805,-0.73631 0.48805,-1.1781c0,-0.44188 -0.17562,-0.86576 -0.488,-1.17814l0,-0.00001l-0.00001,0z'},
-        ],
-        route: null,
         navItemMainHeight: 40,
         selectionsData: [],
         formSubmissionData: {},
         loggedIn: false,
         loginFormActive: false,
         userInformation: null,
-        baseUrl: 'https://www-3.mach.kit.edu/',
+        baseUrl: 'https://www-3.mach.kit.edu/dist/',
         baseFileUrl: 'https://www-3.mach.kit.edu/dfiles/',
         apiUrl: 'https://www-3.mach.kit.edu/api/shib/mach-api/public/index.php/api',
         apiAuthUrl: 'https://www-3.mach.kit.edu/api/shib/mach-api/public/index.php/api/auth/',
-        user: null,
         apps: null,
         settings: null,
 
+        profile: null,
         userFetched: false,
         isAuthenticated: true,
-  },
+
+        sideNavigationOn: true,
+        screenWidth: 0,
+        sideNavigationWidth: 0,
+        users: {
+            dataByKey: {},
+            prevKey: null,
+            prevData: null,
+            firstFetch: false,
+        },
+        user: {
+            dataByKey: {},
+            prevKey: {},
+            prevData: {},
+            firstFetch: {},
+        },
+
+        actions: {
+            dataByKey: {},
+            prevKey: null,
+            prevData: null,
+            firstFetch: false,
+        },
+        action: {
+            dataByKey: {},
+            prevKey: {},
+            prevData: {},
+            firstFetch: {},
+        },
+
+        groups: {
+            dataByKey: {},
+            prevKey: null,
+            prevData: null,
+            firstFetch: false,
+        },
+        group: {
+            dataByKey: {},
+            prevKey: {},
+            prevData: {},
+            firstFetch: {},
+        },
+
+        forms: {
+            dataByKey: {},
+            prevKey: null,
+            prevData: null,
+            firstFetch: false,
+        },
+        form: {
+            dataByKey: {},
+            prevKey: {},
+            prevData: {},
+            firstFetch: {},
+        },
+
+        submissions: {
+            dataByKey: {},
+            prevKey: null,
+            prevData: null,
+            firstFetch: false,
+        },
+        submission: {
+            dataByKey: {},
+            prevKey: {},
+            prevData: {},
+            firstFetch: {},
+        },
+        _forms: {
+            data_index_by_id: {},
+            data: [],
+            fetched_all_forms: false,
+        },
+        _submissions: {
+            data_by_form_id: {},
+            data_index_by_id: {},
+            fetched_all_by_form_id: {},
+            form_id_refs_by_form_id: {},
+        },
+        archive: {
+
+        }
+    },
     mutations: {
-        setIsAuthenticated(state, payload) {
-            state.isAuthenticated=payload
+        setScreenWidth(state, payload) {
+            state.screenWidth = payload
         },
-        setUserFetched(state, payload) {
-            state.userFetched = payload
+        setSideNavigationOn(state, payload) {
+            state.sideNavigationOn = payload
         },
-        setRoute(state, payload) {
-            state.route = payload;
+        setSideNavigationWidth(state, payload) {
+            state.sideNavigationWidth = payload
         },
-        setFormSubmissionData(state, payload) {
-            state.formSubmissionData = payload;
+        clear(state) {
+            state.users = {
+                dataByKey: {},
+                prevKey: null,
+                prevData: null,
+                firstFetch: false,
+            }
+            state.user = {
+                dataByKey: {},
+                prevKey: {},
+                prevData: {},
+                firstFetch: {},
+            }
+    
+            state.actions = {
+                dataByKey: {},
+                prevKey: null,
+                prevData: null,
+                firstFetch: false,
+            }
+            state.action = {
+                dataByKey: {},
+                prevKey: {},
+                prevData: {},
+                firstFetch: {},
+            }
+
+            state.groups = {
+                dataByKey: {},
+                prevKey: null,
+                prevData: null,
+                firstFetch: false,
+            }
+            state.group = {
+                dataByKey: {},
+                prevKey: {},
+                prevData: {},
+                firstFetch: {},
+            }
+
+            state.forms = {
+                dataByKey: {},
+                prevKey: null,
+                prevData: null,
+                firstFetch: false,
+            }
+            state.form = {
+                dataByKey: {},
+                prevKey: {},
+                prevData: {},
+                firstFetch: {},
+            }
+
+            state.submissions = {
+                dataByKey: {},
+                prevKey: null,
+                prevData: null,
+                firstFetch: false,
+            }
+            state.submission = {
+                dataByKey: {},
+                prevKey: {},
+                prevData: {},
+                firstFetch: {},
+            }
+            state.archive = {
+
+            }
         },
-        setCurrentRoute(state, payloade) {
-            state.currentRoute = payloade;
+        set(state, payload) {
+            const identifier = payload.identifier
+            if(payload.cacheByKey) {
+                state[identifier].dataByKey[payload.key] = payload[identifier]
+            }
+            state[identifier].prevData = payload[identifier]
+            state[identifier].prevKey = payload.key
+            state[identifier].firstFetch = true
+        },
+        clearWhere(state, payload) {
+            const deep = payload.deep
+
+
+            // const identifier = payload.identifier
+            const identifierSingle = payload.identifierSingle
+
+            if(deep) {
+                if(state[identifierSingle].dataByKey?.[payload.key]?.[payload.id]) {
+                    delete state[identifierSingle].dataByKey[payload.key][payload.id]
+                }
+                if(state[identifierSingle].prevData[deep]?.[payload.id]) {
+                    delete state[identifierSingle].prevData[deep][payload.id]
+                }
+                if(state[identifierSingle].prevKey[payload.id]) {
+                    delete state[identifierSingle].prevKey[payload.id]
+                }
+                if(state[identifierSingle].firstFetch[payload.id]) {
+                    delete state[identifierSingle].firstFetch[payload.id]
+                }
+
+                const index1 = state[payload.identifier].dataByKey?.[payload.key][deep].findIndex(obj=>obj.id===payload.id)
+                if(index1>=0) {
+                    state[payload.identifier].dataByKey[payload.key][deep].splice(index1, 1)
+                }
+                if(state[payload.identifier].prevKey===payload.key && state[payload.identifier].firstFetch) {
+                    const index2 = state[payload.identifier].prevData[deep]?.findIndex(obj=>obj.id===payload.id)
+                    if(index2>=0) {
+                        state[payload.identifier].prevData[deep]?.splice(index2, 1)
+                    }
+                }
+                
+                
+
+            } else {
+                if(state[identifierSingle].dataByKey?.[payload.key]?.[payload.id]) {
+                    delete state[identifierSingle].dataByKey[payload.key][payload.id]
+                }
+                if(state[identifierSingle].prevData?.[payload.id]) {
+                    delete state[identifierSingle].prevData[payload.id]
+                }
+                if(state[identifierSingle].prevKey[payload.id]) {
+                    delete state[identifierSingle].prevKey[payload.id]
+                }
+                if(state[identifierSingle].firstFetch[payload.id]) {
+                    delete state[identifierSingle].firstFetch[payload.id]
+                }
+                const index1 = state[payload.identifier].dataByKey[payload.key].findIndex(obj=>obj.id===payload.id)
+                if(index1>=0) {
+                    state[payload.identifier].dataByKey[payload.key].splice(index1, 1)
+                }
+                if(state[payload.identifier].prevKey===payload.key && state[payload.identifier].firstFetch) {
+                    const index2 = state[payload.identifier].prevData?.findIndex(obj=>obj.id===payload.id)
+                    if(index2>=0) {
+                        state[payload.identifier].prevData?.splice(index2, 1)
+                    }
+                } 
+            }
+
+        },
+        setWhere(state, payload) {
+            const deep = payload.deep
+            const identifier = payload.identifier
+            const identifierSingle = payload.identifierSingle
+            if(payload.cacheByKey) {
+                if(!(payload.key in state[identifierSingle].dataByKey)) {
+                    state[identifierSingle].dataByKey[payload.key] = {}
+                }
+                state[identifierSingle].dataByKey[payload.key][payload.id] = payload[identifierSingle]
+
+                if(payload.key in state[identifier].dataByKey) {
+                    var index = -1
+                    if(deep) {
+                        index = state[identifier].dataByKey[payload.key][deep].findIndex(obj=>obj.id===payload.id)
+                        if(index>=0) {
+                            state[identifier].dataByKey[payload.key][deep][index] = payload[identifierSingle]
+                        } else {
+                            state[identifier].dataByKey[payload.key][deep].push(payload[identifierSingle])
+                        }
+                    } else {
+                        index = state[identifier].dataByKey[payload.key]?.findIndex(obj=>obj.id===payload.id)
+                        if(index>=0) {
+                            state[identifier].dataByKey[payload.key][index] = payload[identifierSingle]
+                        } else {
+    
+                            state[identifier].dataByKey[payload.key].push(payload[identifierSingle])
+                        }
+                    }
+
+                }
+            }
+            state[identifierSingle].prevKey[payload.id] = payload.key
+            state[identifierSingle].prevData[payload.id] = payload[identifierSingle]
+            state[identifierSingle].firstFetch[payload.id] = true
+
+            if(state[identifier].prevKey===payload.key && state[identifier].firstFetch) {
+                var index2 = -1
+                if(deep) {
+                    index2 = state[identifier].prevData[deep].findIndex(obj=>obj.id===payload.id)
+                    if(index2>=0) {
+                        state[identifier].prevData[deep][index2] = payload[identifierSingle]
+                    } else {
+                        state[identifier].prevData[deep].push(payload[identifierSingle])
+                    }
+                } else {
+                    index2 = state[identifier].prevData?.findIndex(obj=>obj.id===payload.id)
+                    if(index2>=0) {
+                        state[identifier].prevData[index2] = payload[identifierSingle]
+                    } else {
+                        state[identifier].prevData.push(payload[identifierSingle])
+                    }
+                }
+            }
+        },
+        profile(state, payload) {
+            state.profile=payload
         },
         logout(state) {
             state.loggedIn = false;
-            state.user = null;
+            state.profile = null;
             state.apps = null;
             state.settings = null;            
         },
-        login(state, payload) {
-            state.loggedIn = true;
-            state.loginFormActive = false;
-            state.user = payload.user;
-            state.apps = payload.apps;
-            state.settings = payload.settings;
+        set_forms(state,payload) {
+            state._forms.data=payload
+            state._forms.fetched_all_forms=true
+            payload.forEach((form,index) => {
+                state._forms.data_index_by_id[form.id] = index
+            })
         },
-        changeLoginFormActive(state, payload) {
-            state.loginFormActive = payload;
-        },
-        setSelections(state, payload) {
-            state.selectionsData = payload
-        },
-        addSelection(state, payload) {
-            state.selectionsData.push(payload);
-        },
-        updateSelectionsData(state, payload) {
-            state.selectionsData.find(el => el.elementId == payload.elementId).data = payload.data;
-        },
-        updateSelectionsOrder(state, payload) {
-            var tempSelections = [];
-            for (var i=0; i<payload.length; i++) {
-                tempSelections.push(state.selectionsData.find(el => el.elementId == payload[i].elementId));
+        push_form(state,payload) {
+            if(payload.id in state._forms.data_index_by_id) {
+                state._forms.data[state._forms.data_index_by_id[payload.id]] = payload
+            } else {
+                state._forms.data.push(payload)
+                state._forms.data_index_by_id[payload.id] = state._forms.data.length-1
             }
-            state.selectionsData = tempSelections;
+
         },
-        deleteSelection(state, payload) {
-            const index = state.selectionsData.indexOf(state.selectionsData.find(el => el.elementId == payload.elementId));
-            state.selectionsData.splice(index, 1);
+        delete_form_by_id(state,payload) {
+            if(payload in state._forms.data_index_by_id) {
+                state._forms.data.splice(state._forms.data_index_by_id[payload], 1)
+                delete state._forms.data_index_by_id[payload]
+            }
         },
-        deleteSelections(state) {
-            state.selectionsData = []
+        set_submissions(state,payload) {
+
+            state._submissions.form_id_refs_by_form_id[payload.form_id] = Object.keys(payload.submissions)
+            Object.keys(payload.submissions).forEach(form_id=>{
+                state._submissions.form_id_refs_by_form_id[form_id] = Object.keys(payload.submissions)
+            })
+            Object.keys(payload.submissions).forEach(form_id=>{
+                state._submissions.data_by_form_id[form_id] = payload.submissions[form_id]
+                state._submissions.fetched_all_by_form_id[form_id] = true
+                payload.submissions[form_id].forEach((submission,index)=>{
+                    state._submissions.data_index_by_id[submission.id] = index
+                })
+            })
         },
-        updateUserInformation(state, payload) {
-            state.userInformation = payload
+        push_submissions(state,payload) {
+            state._submissions.data_by_form_id[payload.form_id] = payload.submissions
+            payload.submissions.forEach((submission,index)=>{
+                state._submissions.data_index_by_id[submission.id] = index
+            })
         },
-        setUser(state, payload) {
-            state.user = payload;
+        push_submission(state,payload) {
+            if(payload.submission?.id in state._submissions.data_index_by_id) {
+                state._submissions.data_by_form_id[payload.form_id][state._submissions.data_index_by_id[payload.submission.id]] = payload.submission
+            } else {
+                if(payload.form_id in state._submissions.data_by_form_id) {
+                    state._submissions.data_by_form_id[payload.form_id].push(payload.submission)
+                    state._submissions.data_index_by_id[payload.submission.id] = state._submissions.data_by_form_id[payload.form_id].length-1
+                } else {
+                    state._submissions.data_by_form_id[payload.form_id] = [payload.submission]
+                    state._submissions.data_index_by_id[payload.submission.id] = 0
+                }
+            }
         },
+        delete_submission_by_id(state,payload) {
+            if(payload.submission_id in state._submissions.data_index_by_id) {
+                state._submissions.data_by_form_id[payload.form_id].splice(state._submissions.data_index_by_id[payload.submission_id], 1)
+                delete state._submissions.data_index_by_id[payload.submission_id]
+                state._submissions.data_by_form_id[payload.form_id].forEach((submission,index)=>{
+                    state._submissions.data_index_by_id[submission.id] = index
+                })
+            }
+        },
+        add_reply(state,payload) {
+            if(payload.reply.submission_id in state._submissions.data_index_by_id) {
+                state._submissions.data_by_form_id[payload.form_id][state._submissions.data_index_by_id[payload.reply.submission_id]].replies.push(payload.reply)
+            }
+        },
+        set_archive_submissions(state,payload) {
+            state.archive[payload.key] = payload.submissions
+        },
+        dearchive_submissions(state,payload) {
+            payload.submissions.forEach(submission=>{
+                if(submission.archive_group in state.archive) {
+                    state.archive[submission.archive_group]=state.archive[submission.archive_group].filter(archive_submission=>archive_submission.id!=submission.id)
+                }
+            })
+            state._forms.data[state._forms.data_index_by_id[payload.form_id]].archive_groups = payload.archive_groups
+
+        },
+        archive_submissions(state,payload) {
+            payload.archived.forEach(submission=>{
+                if(submission.id in state._submissions.data_index_by_id) {
+                    if(submission.id in state._submissions.data_index_by_id) {
+                        state._submissions.data_by_form_id[submission.form_id].splice(state._submissions.data_index_by_id[submission.id], 1)
+                        delete state._submissions.data_index_by_id[submission.id]
+                        state._submissions.data_by_form_id[submission.form_id].forEach((submission,index)=>{
+                            state._submissions.data_index_by_id[submission.id] = index
+                        })
+                    }
+                }
+            })
+            state.archive[payload.key]=payload.archive
+            state._forms.data[state._forms.data_index_by_id[payload.form_id]].archive_groups = payload.archive_groups
+
+        }
     },
     actions: {
-        async authenticate({commit,state}){
-            if(state.userFetched) {
-                return
+        async _replies({commit,state},{method='get',submission_id=null,formData=null,form_id=null}) {
+            if(method=='post') {
+                var url = `${state.apiUrl}/reply/${submission_id}`
+
+                const {data, error} = await axios({
+                    method,
+                    url,
+                    data: formData,
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }).catch(error=>{
+                    return {data:null,error}
+                })
+                if(!error && data!=null) {
+                    commit('add_reply', {reply:data,form_id})
+                }
+                const submissions = {}
+
+                state._submissions.form_id_refs_by_form_id[form_id].forEach(ref_id=>{
+                    submissions[ref_id] = state._submissions.data_by_form_id[ref_id]
+                })
+                return {
+                    submissions: JSON.parse(JSON.stringify(submissions)),
+                    error: error,
+                }
             }
-            var url = state.apiAuthUrl+'/login'
-            if(window.location.host.startsWith('localhost')) {
-              url = state.apiUrl+'/login'
+        },
+        // Important note: make sure local component variables and store variables do not point to the same object !!!!
+        async _archive({commit,state},{method='get',key=null,archive=true,formData=null,form_id,}) {
+            var url = `${state.apiUrl}/_forms/submissions`
+            if(method=='get') {
+                url += `/archive/${form_id}`
+                if(key!==null) {
+                    url += `/${key}`
+                }
+                const {data,error} = await axios({
+                    method: 'get',
+                    url: url,
+                }).catch(error=>{
+                    return {data:null,error}
+                })
+                if(!error && data!==null) {
+                    commit('set_archive_submissions', {submissions:data,key})
+                    return {submissions:JSON.parse(JSON.stringify(data)), error,key}
+                }
+                return {submissions:null,error,key}
+            } else if(method=='post') {
+                if(archive) {
+                    url += '/archive'
+                } else {
+                    url += '/dearchive'
+                }
+                const {data,error} = await axios({
+                    method: 'post',
+                    url: url,
+                    data: formData
+                }).catch(error=>{
+                    return {data:null,error}
+                })
+                if(!error && data!==null) {
+                    const submissions = {}
+
+
+                    if(archive) {
+                        commit('archive_submissions', {archive:data.archive,archived: data.archived,key:data.archive_group,archive_groups:data.archive_groups,form_id})
+                        state._submissions.form_id_refs_by_form_id[form_id].forEach(ref_id=>{
+                            submissions[ref_id] = state._submissions.data_by_form_id[ref_id]
+                        })
+                        return {archive_groups: JSON.parse(JSON.stringify(data.archive_groups)),submissions: JSON.parse(JSON.stringify(submissions)),archive:JSON.parse(JSON.stringify(state.archive)),error}
+                    } else {
+
+                        commit('dearchive_submissions', {submissions:data.dearchived,archive_groups:data.archive_groups,form_id})
+                        commit('push_submissions', {submissions:data.live,form_id})
+                        state._submissions.form_id_refs_by_form_id[form_id].forEach(ref_id=>{
+                            submissions[ref_id] = state._submissions.data_by_form_id[ref_id]
+                        })
+                        return {archive_groups: JSON.parse(JSON.stringify(data.archive_groups)),submissions: JSON.parse(JSON.stringify(submissions)),archive:JSON.parse(JSON.stringify(state.archive)),error}
+                    }
+                }
+                return {submissions: null, error,key}
             }
-            axios({
-              method: 'get',
-              url: url,
-            }).then(response=>{
-              console.log(response.data)
-              commit('setUserFetched', true)
-            })
-        }
+
+        },
+        async _submissions({commit,state}, {method='get',form_id,submission_id=null,formData=null,anon=false}) {
+            var url = `${state.apiUrl}/_forms/${form_id}/submissions`
+            if(anon) {
+                url = `${state.apiUrl}/_forms/anon/${form_id}/submissions`
+            }
+            if(method!='post' && submission_id!==null) {
+                url += `/${submission_id}`
+            }
+            if(method=='get') {
+                if(submission_id==null) {
+                    if(form_id in state._submissions.fetched_all_by_form_id) {
+                        const submissions = {}
+
+                        state._submissions.form_id_refs_by_form_id[form_id].forEach(ref_id=>{
+                            submissions[ref_id] = state._submissions.data_by_form_id[ref_id]
+                        })
+                        return {
+                            form: JSON.parse(JSON.stringify(state._forms.data[state._forms.data_index_by_id[form_id]])),
+                            submissions: JSON.parse(JSON.stringify(submissions)),
+                            error: null,
+                        }
+                    }
+                    const {data, error} = await axios({
+                        method: method,
+                        url: url
+                    }).catch(error=>{
+
+                        return {data:null,error}
+                    })
+                    if(!error && data!==null) {
+                        commit('push_form', data.form)
+                        commit('set_submissions', {form_id, submissions:data.submissions})
+                        return {form: JSON.parse(JSON.stringify(data?.form)), submissions:JSON.parse(JSON.stringify(data?.submissions)), error}
+                    }
+                    
+                    return {form: null, submissions:null, error}
+                } else if(submission_id in state._submissions.data_index_by_id && form_id in state._forms.data_index_by_id) {
+                    return {
+                        form: JSON.parse(JSON.stringify(state._forms.data[state._forms.data_index_by_id[form_id]])),
+                        submission: JSON.parse(JSON.stringify(state._submissions.data_by_form_id[form_id][form_id][state._submissions.data_index_by_id[submission_id]])),
+                        error:null,
+                    }
+                } else {
+                    const {data, error} = await axios({
+                        method: method,
+                        url: url
+                    }).catch(error=>{
+                        return {data:null,error}
+                    })
+                    if(!error && data!=null) {
+                        commit('push_form', data.form)
+                        commit('push_submission', {form_id, submission:data.submission})
+                        return {form: JSON.parse(JSON.stringify(data?.form)), submission:JSON.parse(JSON.stringify(data?.submission)), error}
+                    }
+                    return {form: null, submission:null, error}
+                }
+            } else if(method=='post') {
+                const {data, error} = await axios({
+                    method: method,
+                    url: url,
+                    data: formData,
+                    headers: {
+                      'Content-Type': 'multipart/form-data'
+                    }
+                }).catch(error=>{
+                    return {data:null,error}
+                })
+                if(!error && data!=null) {
+                  commit('push_submission', {form_id, submission:data.submission})
+                  return {form: JSON.parse(JSON.stringify(data?.form)), submission:JSON.parse(JSON.stringify(data?.submission)), error}
+                }
+                return {form:null, submission:null, error}
+            } else if(method=='update') {
+                const {data, error} = await axios({
+                    method: 'post',
+                    url: url,
+                    data: formData,
+                    headers: {
+                      'Content-Type': 'multipart/form-data'
+                    }
+                }).catch(error=>{
+                    return {data:null,error}
+                })
+                if(!error && data!=null) {
+                    commit('push_submission', {form_id, submission:data.submission})
+                    return {form: JSON.parse(JSON.stringify(data?.form)), submission:JSON.parse(JSON.stringify(data?.submission)), error}
+                }
+                return {form:null,submission:null,error}
+            } else if(method=='delete') {
+                const {error} = await axios({
+                    method: method,
+                    url: url,
+                    data: formData,
+                    headers: {
+                      'Content-Type': 'multipart/form-data'
+                    }
+                }).catch(error=>{
+                    return {data:null,error}
+                })
+                if(!error) {
+                    commit('delete_submission_by_id', {form_id, submission_id})
+                    return {submissions:JSON.parse(JSON.stringify(state._submissions.data_by_form_id[form_id])),error}
+
+                }
+                return {submissions:null,error}
+            }
+
+
+        },
+        async _forms({commit,state}, {method='get',form_id=null,formData=null}) {
+            var url = `${state.apiUrl}/_forms`
+
+            if(method!='post' && form_id!=null) {
+                url += `/${form_id}`
+            }
+            if(method=='get') {
+                if(form_id==null) {
+                    if(state._forms.fetched_all_forms) {
+                        return {forms: JSON.parse(JSON.stringify(state._forms.data)), error: null}
+                    }
+                    const {data, error} = await axios({
+                        method: method,
+                        url: url
+                    }).catch(error=>{
+                        return {data:null,error}
+                    })
+                    if(!error && data!=null) {
+                        commit('set_forms', data)
+                        return {forms:JSON.parse(JSON.stringify(data)), error}
+                    }
+                    return {forms:null, error}
+                } else if(form_id in state._forms.data_index_by_id) {
+                    return {form: JSON.parse(JSON.stringify(state._forms.data[state._forms.data_index_by_id[form_id]])), error: null}
+                } else {
+                    const {data, error} = await axios({
+                        method: method,
+                        url: url
+                    }).catch(error=>{
+                        return {data:null,error}
+                    })
+                    if(!error && data!=null) {
+                        commit('push_form', data)
+                        return {form:JSON.parse(JSON.stringify(data)), error}
+                    }
+                    return {form:null, error}
+
+                }
+            } else if(method=='post') {
+                // url = `${state.apiUrl}/testing-the-api`
+                const {data, error} = await axios({
+                    method: method,
+                    url: url,
+                    data: formData,
+                    headers: {
+                      'Content-Type': 'multipart/form-data'
+                    }
+                }).catch(error=>{
+                    return {data:null,error}
+                })
+                if(!error && data!=null) {
+                    commit('push_form', data)
+                    return {form:JSON.parse(JSON.stringify(data)), error}
+                }
+                return {form:null, error}
+            } else if(method=='update') {
+                const {data, error} = await axios({
+                    method: 'post',
+                    url: url,
+                    data: formData,
+                    headers: {
+                      'Content-Type': 'multipart/form-data'
+                    }
+                }).catch(error=>{
+                    return {data:null,error}
+                })
+                if(!error && data!=null) {
+                    commit('push_form', data)
+                    return {form:JSON.parse(JSON.stringify(data)), error}
+                }
+                return {form:null, error}
+            } else if(method=='delete') {
+                const {error} = await axios({
+                    method: method,
+                    url: url,
+                    data: formData,
+                    headers: {
+                      'Content-Type': 'multipart/form-data'
+                    }
+                }).catch(error=>{
+                    return {data:null,error}
+                })
+                if(!error) {
+                    commit('delete_form_by_id', form_id)
+                    return {forms:JSON.parse(JSON.stringify(state._forms.data)), error}
+                }
+                return {forms:null, error}
+            } else if(method=='copy') {
+                const {data,error} = await axios({
+                    method: 'get',
+                    url: state.apiUrl + '/forms/copy/' + form_id
+                }).catch(error=>{
+                    return {data:null,error}
+                })
+                if(!error) {
+                    commit('push_form', data)
+                    return {form:JSON.parse(JSON.stringify(data)), error}
+                }
+                return {form:null, error}
+            }
+        },
+        async actions({dispatch, commit, state}, {key,id,get,method='get',cacheByKey,formData,refreshData}={}) {
+            if(method==='get') {
+                if(!state.actionsGetAction) {
+                    state.actionsGetAction = actionGetFactory('actions', {dispatch, commit, state})
+                }
+                const data = await state.actionsGetAction({key,id,get,cacheByKey,refreshData})
+                return data
+            }
+            if(method==='post') {
+                if(!state.actionsPostAction) {
+                    state.actionsPostAction = actionPostFactory('actions', { commit, state})
+                }
+                const data = await state.actionsPostAction({key,get,cacheByKey,formData})
+                return data
+            }
+            if(method==='update') {
+                if(!state.actionsUpdateAction) {
+                    state.actionsUpdateAction = actionUpdateFactory('actions', {commit, state})
+                }
+                const data = await state.actionsUpdateAction({key,id,get,cacheByKey,formData})
+                return data
+            }
+            if(method==='delete') {
+                if(!state.actionsDeleteAction) {
+                    state.actionsDeleteAction = actionDeleteFactory('actions', {commit, state})
+                }
+                const data = await state.actionsDeleteAction({key,id,get,cacheByKey})
+                return data
+            }
+        },
+        async groups({dispatch, commit, state}, {key,id,get,method='get',cacheByKey,formData,refreshData}={}) {
+            if(method==='get') {
+                if(!state.groupsGetAction) {
+                    state.groupsGetAction = actionGetFactory('groups', {dispatch, commit, state})
+                }
+                const data = await state.groupsGetAction({key,id,get,cacheByKey,refreshData})
+                return data
+            }
+            if(method==='post') {
+                if(!state.groupsPostAction) {
+                    state.groupsPostAction = actionPostFactory('groups', { commit, state})
+                }
+                const data = await state.groupsPostAction({key,get,cacheByKey,formData})
+                return data
+            }
+            if(method==='update') {
+                if(!state.groupsUpdateAction) {
+                    state.groupsUpdateAction = actionUpdateFactory('groups', {commit, state})
+                }
+                const data = await state.groupsUpdateAction({key,id,get,cacheByKey,formData})
+                return data
+            }
+            if(method==='delete') {
+                if(!state.groupsDeleteAction) {
+                    state.groupsDeleteAction = actionDeleteFactory('groups', {commit, state})
+                }
+                const data = await state.groupsDeleteAction({key,id,get,cacheByKey})
+                return data
+            }
+        },
+        async users({dispatch, commit, state}, {key,id,get,method='get',cacheByKey,formData,refreshData}={}) {
+            if(method==='get') {
+                if(!state.usersGetAction) {
+                    state.usersGetAction = actionGetFactory('users', {dispatch, commit, state})
+                }
+                const data = await state.usersGetAction({key,id,get,cacheByKey,refreshData})
+                return data
+            }
+            if(method==='post') {
+                if(!state.usersPostAction) {
+                    state.usersPostAction = actionPostFactory('users', { commit, state})
+                }
+                const data = await state.usersPostAction({key,get,cacheByKey,formData})
+                return data
+            }
+            if(method==='update') {
+                if(!state.usersUpdateAction) {
+                    state.usersUpdateAction = actionUpdateFactory('users', {commit, state})
+                }
+                const data = await state.usersUpdateAction({key,id,get,cacheByKey,formData})
+                return data
+            }
+            if(method==='delete') {
+                if(!state.usersDeleteAction) {
+                    state.usersDeleteAction = actionDeleteFactory('users', {commit, state})
+                }
+                const data = await state.usersDeleteAction({key,id,get,cacheByKey})
+                return data
+            }
+            
+        },
+        async forms({dispatch, commit, state}, {key,id,get,method='get',cacheByKey,formData,refreshData}={}) {
+            if(method==='get') {
+                if(!state.formsGetAction) {
+                    state.formsGetAction = actionGetFactory('forms', {dispatch, commit, state})
+                }
+                const data = await state.formsGetAction({key,id,get,cacheByKey,refreshData})
+                return data
+            }
+            if(method==='post') {
+                if(!state.formsPostAction) {
+                    state.formsPostAction = actionPostFactory('forms', { commit, state})
+                }
+                const data = await state.formsPostAction({key,get,cacheByKey,formData})
+                return data
+            }
+            if(method==='update') {
+                if(!state.formsUpdateAction) {
+                    state.formsUpdateAction = actionUpdateFactory('forms', {commit, state})
+                }
+                const data = await state.formsUpdateAction({key,id,get,cacheByKey,formData})
+                return data
+            }
+            if(method==='delete') {
+                if(!state.formsDeleteAction) {
+                    state.formsDeleteAction = actionDeleteFactory('forms', {commit, state})
+                }
+                const data = await state.formsDeleteAction({key,id,get,cacheByKey})
+                return data
+            }
+        },
+        async submissions({dispatch, commit, state}, {key,id,get,method='get',cacheByKey,formData,refreshData,deep}={}) {
+            if(method==='get') {
+                if(!state.submissionsGetAction) {
+                    state.submissionsGetAction = actionGetFactory('submissions', {dispatch, commit, state})
+                }
+                const data = await state.submissionsGetAction({key,id,get,cacheByKey,refreshData,deep})
+                return data
+            }
+            if(method==='post') {
+                if(!state.submissionsPostAction) {
+                    state.submissionsPostAction = actionPostFactory('submissions', { commit, state})
+                }
+                const data = await state.submissionsPostAction({key,get,cacheByKey,formData,deep})
+                return data
+            }
+            if(method==='update') {
+                if(!state.submissionsUpdateAction) {
+                    state.submissionsUpdateAction = actionUpdateFactory('submissions', {commit, state})
+                }
+                const data = await state.submissionsUpdateAction({key,id,get,cacheByKey,formData,deep})
+                return data
+            }
+            if(method==='delete') {
+                if(!state.submissionsDeleteAction) {
+                    state.submissionsDeleteAction = actionDeleteFactory('submissions', {commit, state})
+                }
+                const data = await state.submissionsDeleteAction({key,id,get,cacheByKey,deep})
+                return data
+            }
+        },
     },
     modules: {
     },
     getters: {
-        getIsAuthenticated(state) {
-            return state.isAuthenticated
+        getScreenWidth(state) {
+            return state.screenWidth
         },
-        getUserFetched(state) {
-            return state.userFetched
+        getSideNavigationOn(state) {
+            return state.sideNavigationOn
         },
-        getLoginInformation(state){
-            return {user: state.user, apps: state.apps, settings: state.settings};
+        getSideNavigationWidth(state) {
+            return state.sideNavigationWidth
         },
-        getRoute(state) {
-            return state.route;
-        },
-        getFormSubmissionData(state) {
-            return state.formSubmissionData;
-        },
-        getUserInformation(state) {
-            return state.userInformation;
-        },
-        getSelectionsData(state) {
-            return state.selectionsData;
-        },
-        getRoutes(state) {
-            return state.routes;
-        },
-        getCurrentRoute(state) {
-            return state.currentRoute;
-        },
-        getNavItemMainHeight(state) {
-            return state.navItemMainHeight;
-        },
-        getLoggedIn(state) {
-            return state.isSignedIn;
-        },
-        getLoginForm(state){
-            return state.loginFormActive;
+        getProfile(state) {
+            return state.profile
         },
         getBaseUrl(state){
             return state.baseUrl;

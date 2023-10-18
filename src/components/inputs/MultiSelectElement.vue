@@ -88,10 +88,6 @@ export default {
     }
   },
   watch: {
-    data(to) {
-      console.log(to)
-      console.log(typeof to)
-    },
     preset(to) {
       this.selected = []
       this.selected = this.selected.concat(to.map(e=>e.name))

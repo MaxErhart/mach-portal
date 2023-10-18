@@ -5,7 +5,25 @@
     },
     "value_error": {
       "message": "Invalid input"
-    }    
+    },
+    "text": {
+      "message": "Invalid input"
+    },
+    "email": {
+      "message": "Enter valid email address"
+    },
+    "kit_email": {
+      "message": "Enter valid KIT email address"
+    },
+    "number": {
+      "message": "Enter integer number"
+    },
+    "date": {
+      "message": "Enter valid date (dd.mm.yyyy)"
+    },
+    "time": {
+      "message": "Enter valid time"
+    }
   },
  
   "valid": {
@@ -13,6 +31,10 @@
   },
 
   "input_types": {
+    "password": {
+      "type": "text",
+      "regex": "^[*]*"
+    },
     "text": {
       "type": "text",
       "regex": "^[*]*"
@@ -25,9 +47,17 @@
       "type": "email",
       "regex": "^\\w+([-+.']\\w+)*@?(student.kit.edu|kit.edu|partner.kit.edu)$"
     },
+    "integer": {
+      "type": "number",
+      "regex": "^[0-9]+$"
+    },
     "number": {
       "type": "number",
       "regex": "^[0-9]+$"
+    },
+    "float": {
+      "type": "number",
+      "regex": "^[+-]?([0-9]*[.|,])?[0-9]+$"
     },
     "date": {
       "type": "date",

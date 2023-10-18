@@ -2,7 +2,7 @@
   <div class="creator-input-element" :class="{edit: edit}">
     <div class="clickable-overlay" :class="{edit: edit}"></div>
 
-    <SelectElement :data="selectData" :nameAsValue="true"/>
+    <SelectElement :label="label" :required="required" :tooltip="tooltip" :placeholder="placeholder" :data="selections"/>
 
 
     <div class="form-item-buttons no-drag">
@@ -16,30 +16,28 @@
 
     <div class="edit-element" :class="{active: edit}">
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Label', type: 'text', required: true}" :name="`${name}_label_data`" @valueChange="label=$event" :presetValue="label"/>
+        <InputElement label="Edit Label" type="text" :required="true" @valueChange="label=$event" :presetValue="label"/>
       </section> 
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Tooltip', type: 'text', required: false}" :name="`${name}_tooltip_data`" @valueChange="tooltip=$event" :presetValue="tooltip"/>
+        <InputElement label="Edit Tooltip" type="text" :required="false" @valueChange="tooltip=$event" :presetValue="tooltip"/>
       </section>
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Placeholder', type: 'text', required: false}" :name="`${name}_placeholder_data`" @valueChange="placeholder=$event" :presetValue="placeholder"/>
+        <InputElement label="Edit Placeholder" type="text" :required="false" @valueChange="placeholder=$event" :presetValue="placeholder"/>
       </section>        
       <section class="label-section">
-        <Checkbox :data="{label: 'Required', required: false}" :name="`${name}_required_data`" @inputChange="required=$event" :presetValue="required"/>
+        <Checkbox label="Required" :required="false" @inputChange="required=$event" :presetValue="required"/>
       </section>
       <section class="show-section">
-        <Checkbox :data="{label: 'Show Column for Submissions', required: false}" :name="`${name}_show_data`" @inputChange="show=$event" :presetValue="show"/>
-      </section>      
+        <Checkbox label="Show column in submissions" type="text" :required="false" @inputChange="show=$event" :presetValue="show"/>
+      </section>
+      <section class="show-section">
+        <Checkbox label="Enable search options" type="text" :required="false" @inputChange="search=$event" :presetValue="search"/>
+      </section> 
       <section class="label-section">
-        <InputElement :data="{label: 'Number of Options', type: 'number', required: false}" :name="`${name}_numoptions_data`" @valueChange="updateNumOptions($event)" :presetValue="String(numOptions)"/>
-      </section>      
-      <section class="label-section" v-for="index in numOptions" :key="index">
-        <InputElement :data="{label: `Edit Option ${index}`, type: 'text', required: false}" :name="`${name}_${index-1}_data`" @valueChange="selections[index-1]=$event" :presetValue="selections[index-1]"/>
-      </section>             
+        <CollectionInput label="Options" type="text" :required="true" @valueChange="selections=$event" :presetValue="selections"/>
+      </section>                  
       <section class="hidden-section">
-        <input type="hidden" :name="`${name}_component`" value="SelectElement">
-        <input type="hidden" :name="`${name}_position`" :value="position">
-        <input type="hidden" :name="`${name}_id`" :value="id ? id : null">
+        <input type="hidden" :name="name" :value="JSON.stringify(elementData)">
       </section>      
     </div>
   </div>
@@ -48,13 +46,15 @@
 <script>
 import InputElement from '@/components/inputs/InputElement.vue'
 import SelectElement from '@/components/inputs/SelectElement.vue'
+import CollectionInput from '@/components/inputs/CollectionInput.vue'
 import Checkbox from '@/components/inputs/Checkbox.vue'
 export default {
   name: 'CreatorSelectElement',
   components: {
     InputElement,
     SelectElement,
-    Checkbox
+    Checkbox,
+    CollectionInput,
   },
   props: {
     id: Number,
@@ -70,61 +70,31 @@ export default {
       placeholder: '',
       edit: false,
       required: false,
-      numOptions: 1,
-      selections: [''],
+      selections: [],
       show: true,
+      search: false,
     }
   },
   mounted() {
     if(this.presetData) {
-      this.label=this.presetData.label
-      this.tooltip=this.presetData.tooltip
-      this.placeholder=this.presetData.placeholder
-      this.numOptions=Number(this.presetData.numoptions)
-      this.required=this.presetData.required=='true'?true:false
-      this.show=Boolean(Number(this.presetData.show))
-      if(this.numOptions>0) {
-        this.selections[0] = this.presetData['0']
-        for(var i=1; i<this.numOptions; i++) {
-          this.selections.push(this.presetData[`${i}`]) 
-        }        
-      }
+      this.matchPresets(this.presetData)
     }
   },
   watch: {
     presetData(to) {
-      this.label=to.label
-      this.tooltip=to.tooltip
-      this.placeholder=this.presetData.placeholder
-      this.numOptions=Number(to.numoptions)
-      this.required=to.required=='true'?true:false
-      this.show=Boolean(Number(this.presetData.show))
-      if(this.numOptions>0) {
-        this.selections[0] = this.presetData['1']
-        for(var i=1; i<this.numOptions; i++) {
-          this.selections.push(this.presetData[`${i+1}`]) 
-        }        
-      }
-
+      this.matchPresets(to)
     }
-  },  
+  }, 
   computed: {
-    selectData() {
-      var data = {label: this.label, required: this.required, placeholder: this.placeholder, tooltip: this.tooltip}
-      this.options.forEach((v, i)=>{
-        data[String(i)]=v
-      })
-      return data
-    },    
-    options() {
-      var options = []
-      var i = 0
-      this.selections.forEach(e=>{
-        var newOption = {id: i, name: e}
-        options.push(newOption)
-        i++
-      })
-      return options
+    elementData() {
+      return {
+        component: 'SelectElement',
+        position: this.position,
+        id: this.id,
+        show: this.show,
+        input: true,
+        data: {show: this.show,search:this.search,label: this.label, required: this.required, data: this.selections, placeholder: this.placeholder, tooltip: this.tooltip},
+      }
     },
     style() {
       var style = {'color': `${this.color}`}
@@ -135,13 +105,23 @@ export default {
     },
   },
   methods: {
-    updateNumOptions(e){
-      if(Number(e)>this.numOptions.length) {
-        for(var i=this.numOptions.length; i<Number(e);i++){
-          this.selections.push('')
-        }
+    matchPresets(value) {
+      this.label=value.data.label
+      this.tooltip=value.data.tooltip
+      this.placeholder=value.data.placeholder
+      this.required=value.data.required
+      this.show=value.show
+      this.search=value.search
+      this.selections = []
+      if(Array.isArray(value.data.data)) {
+        value.data.data.forEach((opt)=>{
+          this.selections.push({id:opt.id,name:opt.name})
+        })
+      } else {
+        Object.keys(value.data.data).forEach(id=>{
+          this.selections.push({id,name:value.data.data[id]})
+        })
       }
-      this.numOptions=Number(e)
     },
     deleteItem() {
       this.$emit("deleteItem", this.formCratorIdentifier)

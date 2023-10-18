@@ -13,10 +13,14 @@ class FormElement extends Model
         'component',
         'position',
         'data',
+        'show',
+        'input',
     ];  
 
     protected $casts = [
-        'data' => 'array'
+        'data'=>'array',
+        'show'=>'boolean',
+        'input'=>'boolean',
     ];
 
     // public function newPivot(Model $parent, array $attributes, $table, $exists) {

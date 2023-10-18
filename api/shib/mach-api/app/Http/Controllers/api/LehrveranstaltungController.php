@@ -9,8 +9,13 @@ class LehrveranstaltungController extends Controller
 {
   
     public function upload(Request $request) {
+
+        // abort(response()->json(["message"=>"Test"], 500));
         $files = $request->file('file');
         $paths = [];
+        if(!$files) {
+            return response()->json([]);
+        }
         foreach($files as $file) {
             $path = $file->store('file');
             $path = str_replace("/", "\\", $path);
@@ -19,19 +24,40 @@ class LehrveranstaltungController extends Controller
         }
 
         $json = [];
-        foreach($paths as $path) {
+        $columnsPrevFile = NULL;
+        foreach($paths as $index=>$path) {
             $handle = fopen($path, 'r');
-            $row = 0;
+            $row = -1;
             $str = "";
-            $columns = [];
+            $columns = ['fileId', 'fileEntryId'];
             while (($data = fgetcsv($handle, NULL, ";")) !== FALSE) {
-                if($row==0) {
+                if($row==-1) {
                     foreach($data as $entry) {
                         $columns[] = $entry;
                     }
-                } else {                 
+                    if($columnsPrevFile==NULL) {
+                        $columnsPrevFile = $columns;
+                    } else {
+                        if($columnsPrevFile!==$columns) {
+                            abort(response()->json([
+                                "message"=>"Columns of files do not match",
+                            ], 400));
+                        }
+                    }
+
+                } else {
+                    array_unshift($data, $row);
+                    array_unshift($data, $request->get('fileId')[$index]);
+
+                    if(count($columns)!=count($data)) {
+                        abort(response()->json([
+                            "message"=>"Number of columns do not match in file {$files[$index]->getClientOriginalName()} at row {$row}",
+                        ], 400));
+                    }
                     $json[] = array_combine($columns, $data);
+
                 }
+
                 $row++;
             }
             fclose($handle);             

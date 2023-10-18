@@ -30,6 +30,16 @@ return [
 
     'disks' => [
 
+        'dfiles' => [
+            'driver' => 'local',
+            'root' => 'D:\inetpub\dfiles',
+        ],
+
+        'archive' => [
+            'driver' => 'local',
+            'root' => 'D:\inetpub\archive',
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app'),

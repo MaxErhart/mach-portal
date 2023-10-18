@@ -50,7 +50,7 @@ export default {
   data() {
     return {
       borderActive: false,
-      availableIcons: ['cogwheel', 'trash', 'threeHorizontalBars', 'home', 'logout', 'checkmark', 'closeX'],
+      availableIcons: ['cogwheel', 'trash', 'threeHorizontalBars', 'home', 'logout', 'checkmark', 'closeX', 'upload'],
     }
   },
   computed: {

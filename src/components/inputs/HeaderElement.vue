@@ -1,21 +1,21 @@
 <template>
-  <template v-if="data">
-    <div class="header-element">
-      <div class="item">
-        <component :is="data.type" class="item-content" :style="headerStyle">
-          {{data.content}}
-        </component>      
-      </div>
-    </div>    
-  </template>
+  <div class="header-element">
+    <div class="item">
+      <component :is="type" class="item-content" :style="headerStyle">
+        {{content}}
+      </component>      
+    </div>
+  </div>    
 </template>
 
 <script>
 export default {
   name: 'HeaderElement',
   props: {
-    id: Number,
-    data: Object,
+    type: String,
+    content: String,
+    color: String,
+    underline: Boolean,
   },
   data() {
     return {
@@ -24,8 +24,8 @@ export default {
   computed: {
     headerStyle() {
       return {
-        'color': this.data.color,
-        'text-decoration': this.data.underline ? 'underline' : 'none',
+        'color': this.color,
+        'text-decoration': this.underline ? 'underline' : 'none',
       }
     }
   }

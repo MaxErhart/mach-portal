@@ -1,21 +1,21 @@
 <template>
-  <template v-if="data">
-    <div class="section-element">
-      <div class="item">
-        <div class="item-content" :style="sectionStyle">
-          {{data.content}}
-        </div>      
-      </div>
-    </div>    
-  </template>
+  <div class="section-element">
+    <div class="item">
+      <div class="item-content" :style="sectionStyle">
+        {{content}}
+      </div>      
+    </div>
+  </div>    
 </template>
 
 <script>
 export default {
   name: 'SecitonElement',
   props: {
-    id: Number,
-    data: Object,
+    underline: Boolean,
+    bold: Boolean,
+    color: String,
+    content: String,
   },
   data() {
     return {
@@ -24,9 +24,9 @@ export default {
   computed: {
     sectionStyle() {
       return {
-        'text-decoration': this.data.underline ? 'underline' : 'none',
-        'font-weight': this.data.bold ? 'bold' : 'normal',
-        'color': this.data.color,
+        'text-decoration': this.underline ? 'underline' : 'none',
+        'font-weight': this.bold ? 'bold' : 'normal',
+        'color': this.color,
       }
     }
   }
@@ -43,6 +43,6 @@ export default {
   }
   .section-element {
     width: 100%;
-    margin: 25px 0 0 0;
+    margin: 16px 0;
   }
 </style>

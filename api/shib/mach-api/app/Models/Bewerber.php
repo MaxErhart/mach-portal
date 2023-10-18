@@ -11,30 +11,30 @@ class Bewerber extends Model
 
     protected $fillable = [
         'Geschlecht',
-        'Name',
-        'Vorname',
-        'Geboren',
-        'Bewerbungs-nummer',
-        'Adresse',
-        'Ort',
-        'Land',
-        'Datum Antrag',
-        'KIT-E-Mail',
-        'Bemerkung',
-        'Studiengang',
+        'Last name',
+        'First name',
+        'Date of birth',
+        'Number',
+        'Street and street number',
+        'Town',
+        'Country',
+        'Received on',
+        'Email',
+        'Status comments for applicants',
+        'Name (en)',
         'ILIAS',
-        'Ergebnis',
+        'ergebnis',
         'last_login',
         'entrance_exam_registration_changed',
         'entrance_exam_registered',
-        'status',
+        'State',
         'data_protection',
     ];
 
     protected $casts = [
-        'Datum Antrag' => 'date:d.m.Y',
+        'Received on' => 'date:d.m.Y',
         'last_login' => 'date:d.m.Y',
-        'Geboren' => 'date:d.m.Y',
+        'Date of birth' => 'date:d.m.Y',
         'entrance_exam_registration_changed' => 'date:d.m.Y',
         'entrance_exam_registered' => 'boolean',
         'data_protection' => 'boolean',
@@ -45,7 +45,7 @@ class Bewerber extends Model
     }
 
     public function bescheid() {
-        return $this->hasMany(Bescheid::class);
+        return $this->hasMany(Bescheid::class)->orderBy('updated_at','desc');
     }
 
 }

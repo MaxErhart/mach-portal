@@ -14,22 +14,20 @@
     </div>    
     <div class="edit-element" :class="{active: edit}">
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Header', type: 'text', required: true}" :name="`${name}_content_data`" @valueChange="content=$event" :presetValue="content"/>
+        <InputElement label="Edit Content" type="text" :required="true" @valueChange="content=$event" :presetValue="content"/>
       </section>
       <section class="label-section">
-        <Checkbox :data="{label: 'Underline text'}" :name="`${name}_underline_data`" @inputChange="underline=$event" :presetValue="underline=='true'?true:false"/>
+        <Checkbox label="Underline Text" @inputChange="underline=$event" :presetValue="underline=='true'?true:false"/>
       </section>
       <section class="label-section">
-        <Checkbox :data="{label: 'Bold text'}" :name="`${name}_bold_data`" @inputChange="bold=$event" :presetValue="bold=='true'?true:false"/>
+        <Checkbox label="Bold Text" @inputChange="bold=$event" :presetValue="bold=='true'?true:false"/>
       </section>      
       <section class="color-section">
         <label for="Text Color"></label>
-        <input type="color" :name="`${name}_color_data`" v-model="color">
+        <input type="color" v-model="color">
       </section>           
       <section class="hidden-section">
-        <input type="hidden" :name="`${name}_component`" value="SectionElement">
-        <input type="hidden" :name="`${name}_position`" :value="position">
-        <input type="hidden" :name="`${name}_id`" :value="id ? id : null">
+        <input type="hidden" :name="name" :value="JSON.stringify(elementData)">
       </section>      
     </div>
   </div>
@@ -63,21 +61,30 @@ export default {
   },
   mounted() {
     if(this.presetData) {
-      this.content=this.presetData.content
-      this.underline=this.presetData.underline
-      this.bold=this.presetData.bold
-      this.color=this.presetData.color
+      this.matchPresets(this.presetData)
     }
   },
   watch: {
     presetData(to) {
-      this.content=to.content
-      this.underline=to.underline
-      this.bold=to.bold
-      this.color=to.color
+      this.matchPresets(to)
     }
-  },    
+  },   
   computed: {
+    elementData() {
+      return {
+        component: 'SectionElement',
+        position: this.position,
+        id: this.id,
+        show: true,
+        input: false,
+        data: {
+          content: this.content,
+          underline: this.underline,
+          color: this.color,
+          bold: this.bold,
+        }
+      }
+    },
     style() {
       var style = {'color': `${this.color}`}
       if(this.underline) {
@@ -94,8 +101,11 @@ export default {
     },
   },
   methods: {
-    test(e){
-      console.log(e)
+    matchPresets(value) {
+      this.content=value.data.content
+      this.underline=value.data.underline
+      this.bold=value.data.bold
+      this.color=value.data.color
     },
     deleteItem() {
       this.$emit("deleteItem", this.formCratorIdentifier)

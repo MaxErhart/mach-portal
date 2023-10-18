@@ -1,65 +1,75 @@
 <template>
-  <div class="test-the-api">
-    
-  </div>
-
+  <form @submit.prevent="test()" ref="form">
+    <DoubleInputElement label_url="Testlabel URL" label_alias="Testlabel ALIAS"/>
+    <Button text="Submit"/>
+  </form>
+  <CreatorInputLink/>
 </template>
 
 <script>
-import axios from "axios";
-
-
+import DoubleInputElement from '@/components/inputs/DoubleInputElement.vue'
+import CreatorInputLink from '@/components/forms/creatorInputs/CreatorInputLink.vue'
+import Button from '@/components/Button.vue'
 export default {
   name: 'TestView',
   components: {
-
+    DoubleInputElement,
+    CreatorInputLink,
+    Button,
   },
   data() {
     return {
-
+      refresh: null
     }
   },
   computed: {
 
   },
   mounted() {
-    axios({
-      method: 'get',
-      url: 'https://www-3.mach.kit.edu/api/shib/mach-api/public/index.php/api/apps'
-    }).then(response=>{
-      console.log(response.data)
-    })
+
   },
   methods: {
-    
+    test() {
+      const formData = new FormData(this.$refs.form)
+      for (const pair of formData.entries()) {
+        console.log(`${pair[0]}, ${pair[1]}`);
+      }
+    }
   }
 }
 </script>
 
 <style scoped lang="scss">
-
-.kit-button {
-  cursor: pointer;
-  // animation: wobble 0.5s ease;
-  &.animate {
-    animation: wobble 0.4s ease;
+.background {
+  width: 100%;
+  height: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #00876c;
+}
+button {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  aspect-ratio: 3.2;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  gap: 0.5rem;
+  border: 1px solid rgba(255,255,255,0.2);
+  &:hover {
+    background: rgba(255,255,255,0.2);
+    cursor: pointer;
+  }
+  .icon {
+    font-size: 2rem;
+  }
+  .text {
+    font-size: 1rem;
   }
 }
-.about {
-  width: 680px;
-  background-color: #fafafa;
-}
-@keyframes wobble {
-  0% { transform: translateX(0px);}
-  15% { transform: translateX(8px);}
-  30% { transform: translateX(0px);}
-  45% { transform: translateX(-6px);}
-  60% { transform: translateX(0px);}
-  70% { transform: translateX(4px);}
-  80% { transform: translateX(0px);}
-  90% { transform: translateX(-2px);}
-  100% { transform: translateX(0px);}
 
   
-}
 </style>

@@ -1,7 +1,7 @@
 <template>
   <div class="creator-input-element" :class="{edit: edit}">
     <div class="clickable-overlay" :class="{edit: edit}"></div>
-    <Checkbox class="element-preview" :data="{label: label, required: required, tooltip: tooltip}"/>
+    <Checkbox class="element-preview" :label="label" :required="required" :tooltip="tooltip"/>
     <div class="form-item-buttons no-drag">
       <div class="form-item-option edit-form-item no-drag" @click="toggleEdit()">
         <img class="no-drag" :src="require(`@/assets/edit.svg`)">
@@ -12,23 +12,21 @@
     </div>    
     <div class="edit-element" :class="{active: edit}">
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Label', type: 'text', required: true}" :name="`${name}_label_data`" @valueChange="label=$event" :presetValue="String(label)"/>
+        <InputElement label="Edit Label" type="text" :required="true" @valueChange="label=$event" :presetValue="String(label)"/>
       </section> 
       <section class="tooltip-section">
-        <InputElement :data="{label: 'Edit Tooltip', type: 'text', required: false}" :name="`${name}_tooltip_data`" @valueChange="tooltip=$event" :presetValue="String(tooltip)"/>
+        <InputElement label="Edit Tooltip" type="text" :required="false" @valueChange="tooltip=$event" :presetValue="String(tooltip)"/>
       </section> 
 
       <section class="required-section">
-        <Checkbox :data="{label: 'Input Required', required: false}" :name="`${name}_required_data`" @inputChange="required=$event" :presetValue="required"/>
+        <Checkbox label="Input Required" :required="false" @inputChange="required=$event" :presetValue="required"/>
       </section>
 
       <section class="show-section">
-        <Checkbox :data="{label: 'Show Column for Submissions', required: false}" :name="`${name}_show_data`" @inputChange="show=$event" :presetValue="show"/>
+        <Checkbox label="Show Column for Submissions" :required="false" @inputChange="show=$event" :presetValue="show"/>
       </section>      
       <section class="hidden-section">
-        <input type="hidden" :name="`${name}_component`" value="Checkbox">
-        <input type="hidden" :name="`${name}_position`" :value="position">
-        <input type="hidden" :name="`${name}_id`" :value="id ? id : null">
+        <input type="hidden" :name="name" :value="JSON.stringify(elementData)">
       </section>      
     </div>
   </div>
@@ -60,34 +58,34 @@ export default {
     }
   },
   computed: {
-    selectData() {
-      var data = {label: 'Input Type', required: true}
-      this.typeSelect.forEach((v, i)=>{
-        data[String(i)]=v.name
-      })
-      return data
+    elementData() {
+      return {
+        component: 'Checkbox',
+        position: this.position,
+        id: this.id,
+        show: this.show,
+        input: true,
+        data: {label: this.label, required: this.required, tooltip: this.tooltip},
+      }
     },
   },
   mounted() {
     if(this.presetData) {
-      this.label=this.presetData.label
-      this.tooltip=this.presetData.tooltip
-      this.placeholder=this.presetData.placeholder
-      this.required=Boolean(Number(this.presetData.required))
-      this.show=Boolean(Number(this.presetData.show))
+      this.matchPresets(this.presetData)
     }
   },
   watch: {
     presetData(to) {
-      this.label=to.label
-      this.type=to.type
-      this.tooltip=to.tooltip
-      this.placeholder=to.placeholder
-      this.required=Boolean(Number(to.required))
-      this.show=Boolean(Number(this.presetData.show))
+      this.matchPresets(to)
     }
-  },  
+  }, 
   methods: {
+    matchPresets(value) {
+      this.label=value.data.label
+      this.tooltip=value.data.tooltip
+      this.required=value.data.required
+      this.show=value.show
+    },
     deleteItem() {
       this.$emit("deleteItem", this.formCratorIdentifier)
     },    

@@ -1,58 +1,91 @@
 <template>
-  <div id="store-form">
+  <DataPlaceholder v-if="loading" animation="spinner"/>
+  
+  <div id="store-form" v-else>
     <div id="store-form-header">
       <template v-if="form">
-        <h4 >Updating Form: <router-link class="link-style" :to="`/createforms/${form.id}`">{{form.name}}</router-link></h4>
+        <h4 >Updating Form: <router-link class="link-style" :to="`/submit/${form.id}`">{{form.name}}</router-link></h4>
       </template>
       <h4 v-else>Create Form:</h4>
     </div>    
     <form id="store-form-body" @submit.prevent="form ? updateForm(form.id) : storeForm()" ref="form">
       <div id="form-settings">
         <section>
-          <Checkbox :data="{label: 'Display Form', tooltip: 'controls if form is visible to other users or only to oneself'}" :presetValue="form ? form.display : true" name="display" ref="display"/>
+          <Checkbox label="Display Form" tooltip="controls if form is visible to other users or only to oneself" :presetValue="form ? form.display : true" name="display" ref="display"/>
         </section>
         <section>
-          <InputElement :data="{label: 'Name', type: 'text', required: true}"  name="name" ref="name" :presetValue="form ? form.name : null"/>
+          <InputElement label="Name" type="text" :required="true"  name="name" ref="name" :presetValue="form?.name"/>
         </section>
         <section>
-          <InputElement :data="{label: 'Deadline', type: 'date', required: false,  placeholder: 'Date'}" name="deadline" ref="deadline" :presetValue="form ? form.deadline : null" />
+          <InputElement label="Deadline" type="date" :required="false" name="deadline" ref="deadline" :presetValue="form?.deadline" />
         </section>
         <section id="multiplesubmissions-checkbos">
-          <Checkbox :data="{label: 'Multiple Submissions'}" name="multiple_submissions" ref="multipleSubmissions" :presetValue="form ? Boolean(form.multiple_submissions) : null"/>
+          <Checkbox label="Multiple Submissions" name="multiple_submissions" ref="multipleSubmissions" :presetValue="form?.multiple_submissions"/>
         </section>
         <section>
-          <MultiSelectElement label="Tags" :required="false" name="tag" :data="formatTags(tags)" :preset="form ? form.tags : []"/>
+          <MultiSelectElementBox ref="tags" :emptyEmptySearchOption="emptyOption" @emptySearchOption="createTag($event)" :search="true" :inputTypeable="true" label="Tags" :required="false" name="tags" :data="tags" :presetValue="form ? form.tags : []"/>
         </section>                   
       </div>
       <div id="elements-settings">
-        <FormCreator name="formcreator" :presetValue="form ? form.form_elements : null"/>
+        <FormCreator name="formcreator" :form_id="form?.id" :presetValue="form?.form_elements"/>
       </div>
       <div>
         <div style="margin: 5px 0 2px 0;text-decoration: underline">
           Form settings:
-        </div>        
-        <Checkbox style="margin: 8px;" :data="{label: 'Public Form'}" :presetValue="publicForm" name="public" ref="public" @inputChange="publicForm=$event"/>
-        <template v-if="!publicForm">
-          <div style="margin: 5px 0 0 0;text-decoration: underline">
-            Allow users and groups to see and submit your form:
+        </div>
+        <div class="form-visability">
+          <Checkbox style="margin: 8px;" label="Public Form" :presetValue="publicForm" name="public" ref="public" @inputChange="publicForm=$event"/>
+          <div style="margin: 5px 0 0 0;text-decoration: underline" v-if="!publicForm">
+            Select users and groups to see and submit your form:
           </div>
-          <SelectAgents name="formPermissions" :presetValues="form==null ? null : {users: form.user_observers, groups: form.group_observers}"/>
-        </template>
+          <div class="user-group-select-container" v-if="!publicForm">
+            <MultiSelectElementBox :search="true" label="Groups" :data="groups" name="group_observers_submit" :presetValue="groupObserversSubmit"/>
+            <MultiSelectElementBox :cast="castUser" :search="true" label="Users" :data="users" name="user_observers_submit" :presetValue="userObserversSubmit"/>
+          </div>
+          <div style="margin: 5px 0 0 0;text-decoration: underline" v-if="!publicForm">
+            Select users and groups that can see the form but can not create new submissions:
+          </div>
+          <div class="user-group-select-container" v-if="!publicForm">
+            <MultiSelectElementBox :search="true" label="Groups" :data="groups" name="group_observers_view" :presetValue="groupObserversView"/>
+            <MultiSelectElementBox :cast="castUser" :search="true" label="Users" :data="users" name="user_observers_view" :presetValue="userObserversView"/>
+          </div>
+        </div>    
       </div>
       <div>
         <div style="margin: 5px 0 2px 0;text-decoration: underline">
           Submission settings:
         </div>
-        <RadioButton name="submissions" :data="{label: '', '0': 'Standard', '1': 'Custom'}" :presetValue="form ? form.submissions : null" @inputChange="submissions=$event"/>
-        <template v-if="submissions==1">
-          <section>
-            <GroupGroupListElement name="submissionPermissions" :presetValue="form ? form.permissions : null"/>
-          </section>
+        <div class="own-submissions">
+          <SelectElement :required="true" :presetValue="own_sub" label="Own Submission Setting" name="own_sub" :search="false" :data="[{id:0,name:'hide'},{id:1,name:'view'},{id:2,name:'edit'},{id:3,name:'delete'}]"/>
+        </div>
+        Wildcard:
+        <InputElement label="Source" name="wildcard_source" @valueChange="wildcard_source=$event"/>
+        <InputElement label="Target" name="wildcard_target" @valueChange="wildcard_target=$event"/>
+        <SelectElement @select="wildcard_permission=$event" :search="false" label="Permission" :data="[{id:1,name:'view'},{id:2,name:'edit'},{id:3,name:'delete'}]" name="wildcard_permission"/>
+        <Button text="Make submission settings" @click.prevent="getWildcardSubmissionSettings()"/>
+        
+        <!-- <RadioButton name="submissions" :data="{label: '', '0': 'Standard', '1': 'Custom'}" :presetValue="form ? parseInt(form.submissions) : null" @inputChange="submissions=$event"/> -->
+        <section>
+          <GroupGroupListElement :users="users" :groups="groups" name="submissionPermissions" :presetValue="form?.permissions" ref="submissionPermissions"/>
+        </section>
+      </div>
+      <div>
+        <div style="margin: 5px 0 2px 0;text-decoration: underline">
+          Form co-authors:
+        </div>
+        <div class="form-visability">
+          <div style="margin: 5px 0 0 0">
+            Select users and groups to see and edit your form:
+          </div>
+          <div class="user-group-select-container">
+            <MultiSelectElementBox :search="true" label="Groups" :data="groups" name="group_form_permission_edit" :presetValue="group_form_permission_edit"/>
+            <MultiSelectElementBox :cast="castUser" :search="true" label="Users" :data="users" name="user_form_permission_edit" :presetValue="user_form_permission_edit"/>
+          </div>
 
-        </template>
+        </div>    
       </div>
       <div class="submit-form">
-        <Button :loading="submitLoading" :disabled="submitDisabled" :text="form ? 'Update' : 'Submit'"/>
+        <Button ref="submit" :loading="submitLoading" :disabled="submitDisabled" :text="form ? 'Update' : 'Submit'"/>
       </div>
     </form>
   </div>
@@ -61,13 +94,15 @@
 <script>
 import Button from '@/components/Button.vue'
 import InputElement from '@/components/inputs/InputElement.vue'
-import MultiSelectElement from '@/components/inputs/MultiSelectElement.vue'
 import FormCreator from '@/components/forms/FormCreator.vue'
 import Checkbox from '@/components/inputs/Checkbox.vue'
-import RadioButton from '@/components/inputs/RadioButton.vue'
-import SelectAgents from '@/components/inputs/SelectAgents.vue'
+// import RadioButton from '@/components/inputs/RadioButton.vue'
+import SelectElement from '@/components/inputs/SelectElement.vue'
 import GroupGroupListElement from '@/components/inputs/GroupGroupListElement.vue'
-import axios from "axios";
+import MultiSelectElementBox from '@/components/inputs/MultiSelectElementBox.vue'
+// import MultiSelectElement from '@/components/inputs/MultiSelectElement.vue'
+import DataPlaceholder from '@/components/DataPlaceholder.vue'
+import axios from 'axios';
 export default {
   name: 'StoreForm',
   components: {
@@ -75,17 +110,24 @@ export default {
     FormCreator,
     Button,
     Checkbox,
-    MultiSelectElement,
-    SelectAgents,
-    RadioButton,
-    GroupGroupListElement
+    // MultiSelectElement,
+    // RadioButton,
+    SelectElement,
+    GroupGroupListElement,
+    MultiSelectElementBox,
+    DataPlaceholder,
   },
   props: {
     form: Object,
-    tags: Object,
+    tags: Array,
+    loading: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
+      emptyOption: {name: 'Use entered search term to create a new tag and add it to the form'},
       name: '',
       multipleSubmissions: false,
       deadline: null,
@@ -96,22 +138,84 @@ export default {
       publicForm: true,
 
       submissions: 0,
+      users: null,
+      groups: null,
+      groupObserversSubmit: null,
+      userObserversSubmit: null,
+      groupObserversView: null,
+      userObserversView: null,
+      group_form_permission_edit: null,
+      user_form_permission_edit: null,
+      wildcard_source:null,
+      wildcard_target:null,
+      wildcard_permission: null,
+      own_sub: 3,
     }
   },
   mounted() {
-    if(this.form!==null) {
-      this.publicForm = this.form.public
-      this.submissions = this.form.submissions
-    }
+    this.matchPresets(this.form)
+    this.getUsers()
+    this.getGroups()
   },
   computed: {
     apiUrl() {
         return this.$store.getters.getApiUrl;
     }, 
   },
+  watch: {
+    form(to) {
+      this.matchPresets(to)
+    }
+  },
   methods: {
-    formatTags(tags) {
-      return tags.map(t=>t.name)
+    async getWildcardSubmissionSettings() {
+      const url = `${this.$store.getters.getApiUrl}/_forms/wildcard` 
+      var formData = new FormData()
+      formData.append('wildcard_source',this.wildcard_source)
+      formData.append('wildcard_target',this.wildcard_target)
+      formData.append('wildcard_permission',this.wildcard_permission?.id)
+      formData.append('groups',JSON.stringify(this.groups))
+      const {data, error} = await axios({
+          method:'post',
+          url,
+          data: formData,
+          headers: {
+              'Content-Type': 'multipart/form-data'
+          }
+      }).catch(error=>{
+          return {data:null,error}
+      })
+      this.$refs.submissionPermissions.entries = data.concat(this.$refs.submissionPermissions.entries)
+      console.log(data,error?.response)
+
+    },
+    createTag(option) {
+      this.$emit('createTag', option)
+    },
+    async getGroups() {
+      const {groups} = await this.$store.dispatch('groups')
+      this.groups = groups
+    },
+    async getUsers() {
+      const {users} = await this.$store.dispatch('users')
+      this.users = users
+    },
+    matchPresets(form) {
+      if(!form) {
+        return
+      }
+      this.own_sub = form.submissions
+      this.publicForm = form.public
+      this.submissions = form.submissions
+      this.groupObserversSubmit = form.group_observers?.filter(g=>g.pivot.submit_permission==2 || g.pivot.permission==2)
+      this.userObserversSubmit = form.user_observers?.filter(u=>u.pivot.submit_permission==2 || u.pivot.permission==2)
+      this.groupObserversView = form.group_observers?.filter(g=>g.pivot.submit_permission==1 || g.pivot.permission==1)
+      this.userObserversView = form.user_observers?.filter(u=>u.pivot.submit_permission==1 || u.pivot.permission==1)
+      this.group_form_permission_edit = form.group_observers?.filter(g=>g.pivot.form_permission==2 || g.pivot.permission==3)
+      this.user_form_permission_edit = form.user_observers?.filter(u=>u.pivot.form_permission==2 || u.pivot.permission==3)
+    },
+    castUser(user) {
+      return {id: user.id, name: `(${user.id}) ${user.firstname} ${user.lastname}`}
     },
     validateInputs() {
       const el =  this.$refs.name;
@@ -130,159 +234,59 @@ export default {
         }, time)
       })
     },
-    formatFormData(formData) {
-      var formData_formatted = new FormData();
-      var elements = {}
-      var tags = []
-      var permissions = []
-      var multiselect = {}
-      const regex = new RegExp(/^\d/)
-      const intRegex = new RegExp(/^[0-9]\d*$/)
-      for(var pair of formData.entries()) {
-        if(pair[0]=='name' || pair[0]=='deadline') {
-          formData_formatted.append(pair[0], pair[1]);
-        } else if(pair[0]=='multiple_submissions') {
-          formData_formatted.append(pair[0], pair[1]=='true'?1:0);
-        } else if(pair[0]=='display') {
-          formData_formatted.append(pair[0], pair[1]);
-        } else if(pair[0].startsWith('tag')) {
-          tags.push(pair[1])
-        } else if(regex.test(pair[0])) {
-          const fieldname = pair[0].split('_')
-          // const id = fieldname[0]
-          const id = fieldname[0]
-          const name = fieldname[2]
-          if(!(id in elements)) {
-            elements[id] = {}
-          }
-          if(fieldname[fieldname.length-1]=='data') {
-            if(!('data' in elements[id])) {
-              elements[id]['data'] = {}
-            }
-            if(pair[1]==='true') {
-              pair[1]=true
-            } else if(pair[1]==='false') {
-              pair[1]=false
-            } else if(intRegex.test(pair[1])) {
-              pair[1]=Number(pair[1])
-            }
-            elements[id]['data'][name] = pair[1]
-          } else if(fieldname[fieldname.length-2]=='data') {
-            if(!(id in multiselect)) {
-              multiselect[id] = {vals: [], name: name}
-            }
-            if(pair[1]==='true') {
-              pair[1]=true
-            } else if(pair[1]==='false') {
-              pair[1]=false
-            } else if(intRegex.test(pair[1])) {
-              pair[1]=Number(pair[1])
-            }            
-            multiselect[id]['vals'].push(pair[1])
-          }else {
-            if(pair[1]==='true') {
-              pair[1]=true
-            } else if(pair[1]==='false') {
-              pair[1]=false
-            } else if(intRegex.test(pair[1])) {
-              pair[1]=Number(pair[1])
-            }      
-            elements[id][name] = pair[1]
-          }
-        } else if(pair[0]=='formPermissions') {
-          formData_formatted.append('form_permissions', pair[1])
-        } else if(pair[0]=='public') {
-          formData_formatted.append('public', pair[1]=='true'?1:0)
-        } else if(pair[0]=='submissions') {
-          formData_formatted.append('submissions', pair[1])
-        } else if(pair[0]=='viewSubmissionsSource') {
-          formData_formatted.append('view_submissions_source', pair[1])
-        } else if(pair[0]=='viewSubmissionsTarget') {
-          formData_formatted.append('view_submissions_target', pair[1])
-        } else if(pair[0]=='editSubmissions') {
-          formData_formatted.append('edit_submissions', pair[1])
-        } else if(pair[0]=='editSubmissionsSource') {
-          formData_formatted.append('edit_submissions_source', pair[1])
-        } else if(pair[0]=='editSubmissionsTarget') {
-          formData_formatted.append('edit_submissions_target', pair[1])
-        } else if(pair[0].startsWith('submissionPermissions')) {
-          permissions.push(JSON.parse(pair[1]))
+    getElements(formData) {
+      var elements = []
+      var del = []
+      for (const pair of formData.entries()) {
+        if(pair[0].endsWith('_formcreator')) {
+          elements.push(JSON.parse(pair[1]))
+          del.push(pair[0])
         }
       }
-      for (const [key, value] of Object.entries(multiselect)) {
-        elements[key]['data'][value['name']]=value['vals'];
-      }
-
-      formData_formatted.append('elements', JSON.stringify(elements))
-      formData_formatted.append('tags', JSON.stringify(tags))
-      formData_formatted.append('permissions', JSON.stringify(permissions))
-      return formData_formatted
+      del.forEach(entry=>{
+        formData.delete(entry)
+      })
+      return elements
     },
-    updateForm(id) {
+    async updateForm(id) {
+      var formData = new FormData(this.$refs.form);
+      const elements = this.getElements(formData)
+      formData.append('elements', JSON.stringify(elements))
+      this.submitLoading = true;
+      this.submitDisabled = true;
+      // for (const pair of formData.entries()) {
+      //   console.log(`${pair[0]}, ${pair[1]}`);
+      // }
+      const {error} = await this.$store.dispatch('_forms', {method:'update', form_id: id, formData})
+      this.submitLoading = false;
+      this.submitDisabled = false;
+      this.handleSubmitError(error, 'Submit Form')
+    },
+    handleSubmitError(error, action=null) {
+      if(error) {
+        this.emitter.emit('showErrorMessage', {error: error,action})    
+        this.$refs.submit.error = true
+        return
+      }
+      this.handleSubmitSuccess()
+    },
+    handleSubmitSuccess() {
+      this.$emit('storeForm')
+      this.$refs.submit.success = true
+    },
+    async storeForm() {
       this.submitDisabled = true;
       this.submitLoading = true;
-      this.enableButton(400);
-      this.validateInputs();      
       var formData = new FormData(this.$refs.form);
-      for(var entry3 of formData.entries()) {
-       console.log(entry3)
-      }      
-      formData = this.formatFormData(formData)
-      for(var entry2 of formData.entries()) {
-       console.log(entry2)
-      }        
-      const data = {}
-      for(var entry of formData.entries()) {
-        data[entry[0]] = entry[1];
-      }
-
-      axios({
-        method: 'put',
-        url: `${this.apiUrl}/forms/${id}`,
-        data: data,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }).then((response)=>{
-        this.submitLoading = false;
-        this.submitDisabled = false;
-        this.$emit('newEntry', response.data);
-        this.$router.push({name: 'CreateForms'});        
-      }).catch(error=>{
-        console.log(error.response)
-        this.submitLoading = false;
-        this.submitDisabled = false;
-        this.emitter.emit('showResponseMessage', {error: error.response})    
-      })
-    },
-    storeForm() {
-      
-      this.submitDisabled = true;
-      this.submitLoading = true;
-      this.enableButton(400);
-      this.validateInputs();      
-      var formData = new FormData(this.$refs.form);
-      
-      formData = this.formatFormData(formData)
-    
-      axios({
-        method: 'post',
-        url: `${this.apiUrl}/forms`,
-        data: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }).then((response)=>{
-        this.submitLoading = false;
-        this.submitDisabled = false;
-        this.$emit('newEntry', response.data);
-        this.$router.push({name: 'CreateForms'});        
-      }).catch(error=>{
-        this.submitLoading = false;
-        this.submitDisabled = false;
-        console.log(error.response)
-        this.emitter.emit('showResponseMessage', {error: error.response})    
-      })
+      const elements = this.getElements(formData)
+      formData.append('elements', JSON.stringify(elements))
+      // for (const pair of formData.entries()) {
+      //   console.log(`${pair[0]}, ${pair[1]}`);
+      // }
+      const {error} = await this.$store.dispatch('_forms', {method: 'post', formData})
+      this.submitLoading = false;
+      this.submitDisabled = false;
+      this.handleSubmitError(error, 'Submit Form')
     },
   }
 }
@@ -291,6 +295,11 @@ export default {
 
 <style scoped lang="scss">
 @import 'D:\\inetpub\\MPortal\\src\\_variables';
+.user-group-select-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 12px;
+}
 #store-form{
   display: flex;
   flex-direction: column;

@@ -10,12 +10,15 @@
         <div class="form-item-selection" v-on:click="addElement('SelectElement')">Select</div>
         <div class="form-item-selection" v-on:click="addElement('Checkbox')">Checkbox</div>
         <div class="form-item-selection" v-on:click="addElement('SelectReferenceElement')">Select Reference</div>
+        <div class="form-item-selection" v-on:click="addElement('DoubleInputElement')">Input Link</div>
+        <div class="form-item-selection" v-on:click="addElement('LinkElement')">Display Link</div>
+        <div class="form-item-selection" v-on:click="addElement('HTMLElement')">Raw HTML</div>
       </div>
 
       <div id="create-form-content" ref="contentContainer">
         <div class="form-item-wrapper" :class="{active: index==dragIndex}" :ref="el.id" v-for="(el, index) in elements" :key="el.id" :style="index==dragIndex ? dynamicStyleWrapper : null">
           <div class="element" :class="{active: index==dragIndex, dragable: dragable}" @mousedown="startDrag($event, index)" :style="index==dragIndex ? dynamicStyleElement : null" >
-            <component :position="index" :id="Number(el.el_id)" :formCratorIdentifier="Number(el.id)" :presetData="el.presetData" class="component" :is="componentDict[el.type]" :name="`${el.id}_${name}`" @deleteItem="deleteItem($event)" @editActivated="editActivated()" @editDeactivated="editDeactivated()"></component>
+            <component :position="index" :id="el.element ? Number(el.element.id):null" :formCratorIdentifier="Number(el.id)" :presetData="el.element" class="component" :is="componentDict[el.type]" :name="`${el.id}_${name}`" @deleteItem="deleteItem($event)" @editActivated="editActivated()" @editDeactivated="editDeactivated()"></component>
           </div>
         </div>
       </div>      
@@ -31,9 +34,13 @@ import CreatorFileUploadElement from '@/components/forms/creatorInputs/CreatorFi
 import CreatorSelectElement from '@/components/forms/creatorInputs/CreatorSelectElement.vue'
 import CreatorCheckboxElement from '@/components/forms/creatorInputs/CreatorCheckboxElement.vue'
 import CreatorSelectReferenceElement from '@/components/forms/creatorInputs/CreatorSelectReferenceElement.vue'
+import CreatorInputLink from '@/components/forms/creatorInputs/CreatorInputLink.vue'
+import CreatorLink from '@/components/forms/creatorInputs/CreatorLink.vue'
+import CreatorHTMLElement from '@/components/forms/creatorInputs/CreatorHTMLElement.vue'
 export default {
   name: 'FormCreator',
   props: {
+    form_id: [String,Number],
     presetValue: Object,
     name: String,
   },
@@ -45,6 +52,9 @@ export default {
     CreatorSelectElement,
     CreatorCheckboxElement,
     CreatorSelectReferenceElement,
+    CreatorInputLink,
+    CreatorLink,
+    CreatorHTMLElement,
   },
   data() {
     return {
@@ -56,6 +66,9 @@ export default {
         SelectElement: 'CreatorSelectElement',
         Checkbox: 'CreatorCheckboxElement',
         SelectReferenceElement: 'CreatorSelectReferenceElement',
+        DoubleInputElement: 'CreatorInputLink',
+        LinkElement: 'CreatorLink',
+        HTMLElement: 'CreatorHTMLElement',
       },
       elements: [],
       dragIndex: null,
@@ -69,27 +82,15 @@ export default {
     }
   },
   mounted(){
-    if(this.presetValue) {
-      this.presetValue.forEach(e=>{
-        this.addElement(e.component)
-        this.elements[this.elements.length-1]['presetData']=e.data
-        this.elements[this.elements.length-1]['position']=e.position
-        this.elements[this.elements.length-1]['el_id']=e.id
-      })
-      this.elements.sort((a,b)=>a.position>b.position ? 1: -1)
+    if(this.presetValue?.[this.form_id]) {
+      this.setPreset(this.presetValue[this.form_id])
     }
   },
   watch: {
     presetValue(to) {
-      if(to==null) {
-        this.elements=[]
-      } else {
-        to.forEach(e=>{
-          this.addElement(e.component)
-          this.elements[this.elements.length-1]['presetData']=e.data
-        })
-        this.elements.sort((a,b)=>a.position>b.position ? 1: -1)
-      }
+    if(to?.[this.form_id]) {
+      this.setPreset(to[this.form_id])
+    }
     }
   },
   computed: {
@@ -113,6 +114,25 @@ export default {
     },
   },
   methods: {
+    setPreset(elements) {
+      if(elements==null) {
+        return
+      }
+      this.elements = []
+      Object.keys(elements).forEach(element_id=>{
+        const e = elements[element_id]
+        if(this.$route.params.id && this.$route.params.id!=e.form_id && e.form_id) {
+          return
+        }
+
+        this.addElement(e.component)
+        this.elements[this.elements.length-1]['element']=e
+        // this.elements[this.elements.length-1]['position']=e.position
+        // this.elements[this.elements.length-1]['el_id']=e.id
+        // this.elements[this.elements.length-1]['show']=e.show
+      })
+      this.elements.sort((a,b)=>a.element.position>b.element.position ? 1: -1)
+    },
     editActivated() {
       this.dragable = false
     },
@@ -174,8 +194,7 @@ export default {
       if(this.elements.length>1) {
         if(this.dragIndex==0) {
 
-          const cond1 = this.elements[this.dragIndex+1].top<this.dragToContainerTop
-          // console.log(cond1)
+          const cond1 = this.elements[this.dragIndex].top+this.elements[this.dragIndex+1].height<this.dragToContainerTop
           if(cond1) {
             this.dragWrapperTop = this.elements[this.dragIndex+1].top
             this.jumpCorrection = this.jumpCorrection - this.elements[this.dragIndex+1].height - this.MARGIN
@@ -186,8 +205,7 @@ export default {
             this.dragIndex++;
           }
         } else if(this.dragIndex==this.elements.length-1) {
-          const cond2 = this.elements[this.dragIndex-1].top + this.elements[this.dragIndex-1].height>this.dragToContainerTop
-          // console.log(cond2)
+          const cond2 = this.elements[this.dragIndex-1].top + this.elements[this.dragIndex].height>this.dragToContainerTop
           if(cond2) {
             this.dragWrapperTop = this.elements[this.dragIndex-1].top
             this.jumpCorrection = this.jumpCorrection + this.elements[this.dragIndex-1].height + this.MARGIN
@@ -199,9 +217,8 @@ export default {
           }
 
         } else {
-          const cond1 = this.elements[this.dragIndex+1].top<this.dragToContainerTop
-          const cond2 = this.elements[this.dragIndex-1].top + this.elements[this.dragIndex-1].height>this.dragToContainerTop
-          // console.log(cond1, cond2)
+          const cond1 = this.elements[this.dragIndex].top + this.elements[this.dragIndex+1].height<this.dragToContainerTop
+          const cond2 = this.elements[this.dragIndex-1].top + this.elements[this.dragIndex].height>this.dragToContainerTop
           if(cond1) {
             this.dragWrapperTop = this.elements[this.dragIndex+1].top
             this.jumpCorrection = this.jumpCorrection - this.elements[this.dragIndex+1].height - this.MARGIN
@@ -231,7 +248,6 @@ export default {
       this.dragWrapperTop = 0
       this.offsetY = 0
       this.dragIndex = null
-      console.log(this.elements)
     },
     deleteItem(e) {
       var a = this.elements.map(e=>Number(e.id)).indexOf(e)

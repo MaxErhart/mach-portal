@@ -90,7 +90,9 @@ class SubmissionControllerNoLogin extends Controller
             "form_id"=>"Required|integer",
         ]);
         $form = Form::findOrFail($request->get("form_id"));
-        if($form->deadline && $form->deadline<new DateTime()) {
+        $tomorrow = new DateTime();
+        $tomorrow = $tomorrow->modify('+1 day');
+        if($form->deadline && $form->deadline<$tomorrow) {
             abort(500, "Deadline passed.");
         }
 
@@ -136,7 +138,7 @@ class SubmissionControllerNoLogin extends Controller
         $content .= '<br>Das Dekanat';
 
         $newSubmission = new Submission();
-        $newSubmission->user()->associate(User::findOrFail(4));
+        $newSubmission->owner()->associate(User::findOrFail(4));
         $newSubmission->form()->associate($form);
         $newSubmission->save();
         $newSubmission->form_elements()->sync($data);

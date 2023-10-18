@@ -4,23 +4,27 @@
       <h1>Application portal</h1>
     </div>
     <div class="portal-body">
-      <!-- <Registration/> -->
       <Login v-if="!storage_bewerberportal || !storage_bewerberportal.loggedin" @loggedin="login($event)"/>
       <div class="dashboard" v-else>
 
         <DataProtection v-if="!storage_bewerberportal.data_protection" :bewerber="storage_bewerberportal" @submitDataProtection="handleDataProtection($event)"/>
         <template v-else>
-          <h4>Degree course: {{storage_bewerberportal.Studiengang}}</h4>
-          <h4>Current status of application: {{storage_bewerberportal.status}}</h4>
-          <h4 v-if="!(storage_bewerberportal.reason_of_rejection === null || storage_bewerberportal.reason_of_rejection.match(/^ *$/) !== null)">Reason of rejection: {{storage_bewerberportal.reason_of_rejection}}</h4>
+          <h4>Degree course: {{storage_bewerberportal['Name (en)']}}</h4>
+          <h4>Current status of application: {{storage_bewerberportal.State}}</h4>
+          <h4 v-if="!(storage_bewerberportal['Reason of rejection'] === null || storage_bewerberportal['Reason of rejection'].match(/^ *$/) !== null)">
+            Reason of rejection: {{storage_bewerberportal['Reason of rejection']}}
+          </h4>
           <RegisterEntranceExam :bewerber="storage_bewerberportal" @register="register($event)"/>
+          <Button :loading="false" :disabled="false" text="Logout" @click="logout()"/>
           
-          <div class="bescheide" v-if="storage_bewerberportal.loggedin && storage_bewerberportal.bescheid.length>0">
-            <h2>Bescheide</h2>
-            <Bescheid :name="bescheid.name" :file_pdf="bescheid.file_pdf" v-for="bescheid in storage_bewerberportal.bescheid" :key="bescheid"/>
+          <div class="bescheide" v-if="storage_bewerberportal.loggedin">
+            <h2>List of Notices</h2>
+            <template v-if="storage_bewerberportal.bescheid.length>0">
+              <Bescheid :bescheid="bescheid" v-for="bescheid in storage_bewerberportal.bescheid" :key="bescheid"/>
+            </template>
+            <div v-else>No notices available.</div>
           </div>    
         </template>
-        <Button :loading="false" :disabled="false" text="Logout" @click="logout()"/>
 
       </div>
     </div>
@@ -58,6 +62,7 @@ export default {
   mounted() {
     if(localStorage.bewerberportal) {
       this.storage_bewerberportal = JSON.parse(localStorage.bewerberportal)
+      console.log(this.storage_bewerberportal)
       this.updateInfo()
     }
   },
@@ -77,8 +82,8 @@ export default {
     updateInfo() {
       const url = `${this.apiUrl}/bewerberportal/login`
       var formData = new FormData();
-      formData.append('email', this.storage_bewerberportal['KIT-E-Mail'])   
-      formData.append('bewerbungs_nummer', this.storage_bewerberportal['Bewerbungs-nummer'])   
+      formData.append('email', this.storage_bewerberportal.Email)   
+      formData.append('bewerbungs_nummer', this.storage_bewerberportal.Number)   
 
       axios({
         method: 'post',
@@ -145,7 +150,6 @@ export default {
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  background-color: #fff;
   width: 100%;
 }
 .dashboard {

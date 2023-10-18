@@ -67,10 +67,22 @@ protected $ZoomMode;           // zoom display mode
 protected $LayoutMode;         // layout display mode
 protected $metadata;           // document properties
 protected $PDFVersion;         // PDF version number
-
+protected $FontSpacingPt;
 /*******************************************************************************
 *                               Public methods                                 *
 *******************************************************************************/
+
+
+function SetFontSpacing($size)
+{
+    if($this->FontSpacingPt==$size) {
+			return;
+		}
+    $this->FontSpacingPt = $size;
+    $this->FontSpacing = $size/$this->k;
+    if ($this->page>0)
+        $this->_out(sprintf('BT %.3f Tc ET', $size));
+}
 
 function __construct($orientation='P', $unit='mm', $size='A4')
 {

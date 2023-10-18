@@ -11,6 +11,8 @@ namespace App\Classes\fpdf;
 
 define('FPDF_VERSION','1.84');
 
+
+
 class FPDF
 {
 protected $page;               // current page number
@@ -68,10 +70,260 @@ protected $ZoomMode;           // zoom display mode
 protected $LayoutMode;         // layout display mode
 protected $metadata;           // document properties
 protected $PDFVersion;         // PDF version number
-
+protected $DocumentFormattingSize=0;
+protected $doc_set_padding_x;
+protected $doc_set_padding_y;
+protected $doc_set_width;
+protected $doc_set_height;
+protected $doc_set_text_padding;
 /*******************************************************************************
 *                               Public methods                                 *
 *******************************************************************************/
+
+
+
+function addTagModifier($tag) {
+	if($tag=="b") {
+		$this->bold(true);
+	}
+}
+function removeTagModifier($tag) {
+	if($tag=="b") {
+		$this->bold(false);
+	}
+}
+
+function HTMLCell($w, $h, $txt, $border=0, $align='J', $fill=false, $indent=0) {
+	$tag_fragments=preg_split('/<(.*)>/U',$txt,-1,PREG_SPLIT_DELIM_CAPTURE);
+
+	$tag_stack = [];
+
+	$left = $this->GetX();
+	$top = $this->GetY();
+
+	$current_indent = 0;
+	$current_left = $left;
+	$current_top = $top;
+	$newline = "";
+	$space = $this->GetStringWidth(" ");
+
+	foreach($tag_fragments as $index=>$fragment) {
+		if($index%2==0) {
+			// TEXT
+			$this->SetXY($current_left, $current_top); // set the position of the box
+
+
+
+			$this->addTagModifier(end($tag_stack));
+			$newline = $this->MultiCell($w, $h, $fragment, $border, $align, $fill, $current_indent);
+			if($this->GetStringWidth($newline)<$this->GetStringWidth($fragment)) {
+				$current_indent = 0;
+			}
+			$this->removeTagModifier(end($tag_stack));
+
+
+		} else {
+			// Tag
+			if($fragment[0]=='/') {
+				// Tag End
+				$last_fragment = array_pop($tag_stack);
+				if(substr($fragment,1)!==$last_fragment) {
+					// Open / Close Tag Error
+					// throw new Exception('HTML open close tags do not match');
+				}
+
+				$potential_indent = fmod(($this->GetStringWidth($newline)+$current_indent)/$w,1)*$w;
+				$first_word_width = $this->GetStringWidth(explode(" ",$tag_fragments[$index+1])[0]);
+
+				if($potential_indent + $first_word_width > $w) {
+					// Start on newline
+					$current_top = $this->GetY();
+					$current_indent = 0;
+				} else {
+					// Add indent and start on current line
+					$current_top = $this->GetY() - $h;
+					$current_indent = $potential_indent;
+					if(!empty($newline) && substr($newline,-1)!==" ") {
+						$current_indent += $space;
+					}
+				}
+
+			} else {
+
+				if($fragment=="br") {
+					$current_top = $this->GetY();
+					$current_indent = 0;
+					continue;
+				}
+
+				// Tag Start
+				$tag_stack[] = $fragment;
+
+				$potential_indent = fmod(($this->GetStringWidth($newline)+$current_indent)/$w,1)*$w;
+				$first_word_width = $this->GetStringWidth(explode(" ",$tag_fragments[$index+1])[0]);
+
+				if($potential_indent + $first_word_width > $w) {
+					// Start on newline
+					$current_top = $this->GetY();
+					$current_indent = 0;
+				} else {
+					// Add indent and start on current line
+					$current_top = $this->GetY() - $h;
+					$current_indent = $potential_indent;
+					if(!empty($newline) && substr($newline,-1)!==" ") {
+						$current_indent += $space;
+					}
+				}
+			}
+		}
+	}
+
+}
+
+
+
+
+
+
+
+
+
+var $angle=0;
+function Rotate($angle,$x=-1,$y=-1)
+{
+    if($x==-1)
+        $x=$this->x;
+    if($y==-1)
+        $y=$this->y;
+    if($this->angle!=0)
+        $this->_out('Q');
+    $this->angle=$angle;
+    if($angle!=0)
+    {
+        $angle*=M_PI/180;
+        $c=cos($angle);
+        $s=sin($angle);
+        $cx=$x*$this->k;
+        $cy=($this->h-$y)*$this->k;
+        $this->_out(sprintf('q %.5F %.5F %.5F %.5F %.2F %.2F cm 1 0 0 1 %.2F %.2F cm',$c,$s,-$s,$c,$cx,$cy,-$cx,-$cy));
+    }
+}
+
+function checkbox($sidelength,$checked=false) {
+	$x = $this->x;
+	$y = $this->y;
+
+	$this->SetXY($x,$y);
+	$this->Cell($sidelength,$sidelength,'', 1,0,'L',0);
+
+	if($checked) {
+		$this->SetXY($x,$y+$sidelength);
+		$this->Rotate(45);
+		$this->Cell(sqrt(2*$sidelength*$sidelength),0,'',1,0,'L',0);
+	
+		$this->SetXY($x,$y);
+		$this->Rotate(-45);
+		$this->Cell(sqrt(2*$sidelength*$sidelength),0,'',1,0,'L',0);
+	}
+	$this->Rotate(0);
+
+}
+
+function padX() {
+	return $this->doc_set_padding_x;
+}
+
+function padY() {
+	return $this->doc_set_padding_y;
+}
+function docW() {
+	return $this->doc_set_width;
+}
+function docH() {
+	return $this->doc_set_height;
+}
+function padT() {
+	return $this->doc_set_text_padding;
+}
+
+function setDocumentSettings($settings) {
+	$this->doc_set_padding_x = $settings["padding_x"];
+	$this->doc_set_padding_y = $settings["padding_y"];
+	$this->doc_set_width = $settings["width"];
+	$this->doc_set_height = $settings["height"];
+	$this->doc_set_text_padding = $settings["text_padding"];
+}
+
+function setDocumentFormattingSize($size) {
+	$this->DocumentFormattingSize = $size;
+}
+
+function headerHeightXL($pt=0) {
+	return 2.5*$this->fontHeight($pt);
+}
+
+function headerHeightL($pt=0) {
+	return 2*$this->fontHeight($pt);
+}
+
+function bold($isBold=true) {
+	if($isBold) {
+		$this->SetFont($this->FontFamily, 'B', $this->FontSizePt);
+	} else {
+		$this->SetFont($this->FontFamily, '', $this->FontSizePt);
+	}
+}
+
+function setPage($page) {
+	$this->page=$page;
+}
+
+function getFontSize() {
+	return $this->FontSizePt;
+}
+
+function ptToMilimeter($pt) {
+	return floatval($pt)*0.353;
+}
+
+function padding($size) {
+	$this->y += $size*$this->fontHeight()/4;
+	return $this->y;
+}
+
+function fontHeight($pt=0,$mm=true) {
+	if($mm) {
+		if($pt!=0) {
+			return $this->ptToMilimeter($pt);
+		} else if($this->DocumentFormattingSize!=0){
+			return $this->ptToMilimeter($this->DocumentFormattingSize);
+		} else {
+			return $this->ptToMilimeter($this->FontSizePt);
+		}
+	}
+}
+
+function spaceIndent($mm=true) {
+	if($mm) {
+		$this->x += 2.5;
+	}
+}
+
+function tabIndent($mm=true) {
+	if($mm) {
+		$this->x += 12.7;
+	}
+}
+
+// function _endpage()
+// {
+//     if($this->angle!=0)
+//     {
+//         $this->angle=0;
+//         $this->_out('Q');
+//     }
+//     parent::_endpage();
+// }
 
 function __construct($orientation='P', $unit='mm', $size='A4')
 {
@@ -656,120 +908,274 @@ function Cell($w, $h=0, $txt='', $border=0, $ln=0, $align='', $fill=false, $link
 		$this->x += $w;
 }
 
-function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=false)
+function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=false, $indent=0)
 {
-	// Output text with automatic or explicit line breaks
-	if(!isset($this->CurrentFont))
-		$this->Error('No font has been set');
-	$cw = &$this->CurrentFont['cw'];
-	if($w==0)
-		$w = $this->w-$this->rMargin-$this->x;
-	$wmax = ($w-2*$this->cMargin)*1000/$this->FontSize;
-	$s = str_replace("\r",'',$txt);
-	$nb = strlen($s);
-	if($nb>0 && $s[$nb-1]=="\n")
-		$nb--;
-	$b = 0;
-	if($border)
-	{
-		if($border==1)
-		{
-			$border = 'LTRB';
-			$b = 'LRT';
-			$b2 = 'LR';
+    //Output text with automatic or explicit line breaks
+    if(!isset($this->CurrentFont))
+        $this->Error('No font has been set');
+    $cw=$this->CurrentFont['cw'];
+    if($w==0)
+        $w=$this->w-$this->rMargin-$this->x;
+
+    $wFirst = $w-$indent;
+    $wOther = $w;
+
+    $wmaxFirst=($wFirst-2*$this->cMargin)*1000/$this->FontSize;
+    $wmaxOther=($wOther-2*$this->cMargin)*1000/$this->FontSize;
+
+    $s=str_replace("\r",'',(string)$txt);
+    $nb=strlen($s);
+    if($nb>0 && $s[$nb-1]=="\n")
+        $nb--;
+    $b=0;
+    if($border)
+    {
+        if($border==1)
+        {
+            $border='LTRB';
+            $b='LRT';
+            $b2='LR';
+        }
+        else
+        {
+            $b2='';
+            if(is_int(strpos($border,'L')))
+                $b2.='L';
+            if(is_int(strpos($border,'R')))
+                $b2.='R';
+            $b=is_int(strpos($border,'T')) ? $b2.'T' : $b2;
+        }
+    }
+    $sep=-1;
+    $i=0;
+    $j=0;
+    $l=0;
+    $ns=0;
+    $nl=1;
+        $first=true;
+    while($i<$nb)
+    {
+        //Get next character
+        $c=$s[$i];
+        if($c=="\n")
+        {
+            //Explicit line break
+            if($this->ws>0)
+            {
+                $this->ws=0;
+                $this->_out('0 Tw');
+            }
+            $this->Cell($w,$h,substr($s,$j,$i-$j),$b,2,$align,$fill);
+            $i++;
+            $sep=-1;
+            $j=$i;
+            $l=0;
+            $ns=0;
+            $nl++;
+            if($border && $nl==2)
+                $b=$b2;
+            continue;
+        }
+        if($c==' ')
+        {
+            $sep=$i;
+            $ls=$l;
+            $ns++;
+        }
+        $l+=$cw[$c];
+
+        if ($first)
+        {
+            $wmax = $wmaxFirst;
+            $w = $wFirst;
+        }
+        else
+        {
+            $wmax = $wmaxOther;
+            $w = $wOther;
+        }
+
+        if($l>$wmax)
+        {
+            //Automatic line break
+            if($sep==-1)
+            {
+                if($i==$j)
+                    $i++;
+                if($this->ws>0)
+                {
+                    $this->ws=0;
+                    $this->_out('0 Tw');
+                }
+                $SaveX = $this->x; 
+                if ($first && $indent>0)
+                {
+                    $this->SetX($this->x + $indent);
+                    $first=false;
+                }
+                $this->Cell($w,$h,substr($s,$j,$i-$j),$b,2,$align,$fill);
+                    $this->SetX($SaveX);
+            }
+            else
+            {
+                if($align=='J')
+                {
+                    $this->ws=($ns>1) ? ($wmax-$ls)/1000*$this->FontSize/($ns-1) : 0;
+                    $this->_out(sprintf('%.3f Tw',$this->ws*$this->k));
+                }
+                $SaveX = $this->x; 
+                if ($first && $indent>0)
+                {
+                    $this->SetX($this->x + $indent);
+                    $first=false;
+                }
+                $this->Cell($w,$h,substr($s,$j,$sep-$j),$b,2,$align,$fill);
+                    $this->SetX($SaveX);
+                $i=$sep+1;
+            }
+            $sep=-1;
+            $j=$i;
+            $l=0;
+            $ns=0;
+            $nl++;
+            if($border && $nl==2)
+                $b=$b2;
+        }
+        else
+            $i++;
+    }
+    //Last chunk
+    if($this->ws>0)
+    {
+        $this->ws=0;
+        $this->_out('0 Tw');
+    }
+    if($border && is_int(strpos($border,'B')))
+        $b.='B';
+		if($first && $indent>0) {
+			$this->SetX($this->x + $indent);
+			$w = $wFirst;
 		}
-		else
-		{
-			$b2 = '';
-			if(strpos($border,'L')!==false)
-				$b2 .= 'L';
-			if(strpos($border,'R')!==false)
-				$b2 .= 'R';
-			$b = (strpos($border,'T')!==false) ? $b2.'T' : $b2;
-		}
-	}
-	$sep = -1;
-	$i = 0;
-	$j = 0;
-	$l = 0;
-	$ns = 0;
-	$nl = 1;
-	while($i<$nb)
-	{
-		// Get next character
-		$c = $s[$i];
-		if($c=="\n")
-		{
-			// Explicit line break
-			if($this->ws>0)
-			{
-				$this->ws = 0;
-				$this->_out('0 Tw');
-			}
-			$this->Cell($w,$h,substr($s,$j,$i-$j),$b,2,$align,$fill);
-			$i++;
-			$sep = -1;
-			$j = $i;
-			$l = 0;
-			$ns = 0;
-			$nl++;
-			if($border && $nl==2)
-				$b = $b2;
-			continue;
-		}
-		if($c==' ')
-		{
-			$sep = $i;
-			$ls = $l;
-			$ns++;
-		}
-		$l += $cw[$c];
-		if($l>$wmax)
-		{
-			// Automatic line break
-			if($sep==-1)
-			{
-				if($i==$j)
-					$i++;
-				if($this->ws>0)
-				{
-					$this->ws = 0;
-					$this->_out('0 Tw');
-				}
-				$this->Cell($w,$h,substr($s,$j,$i-$j),$b,2,$align,$fill);
-			}
-			else
-			{
-				if($align=='J')
-				{
-					$this->ws = ($ns>1) ? ($wmax-$ls)/1000*$this->FontSize/($ns-1) : 0;
-					$this->_out(sprintf('%.3F Tw',$this->ws*$this->k));
-				}
-				$this->Cell($w,$h,substr($s,$j,$sep-$j),$b,2,$align,$fill);
-				$i = $sep+1;
-			}
-			$sep = -1;
-			$j = $i;
-			$l = 0;
-			$ns = 0;
-			$nl++;
-			if($border && $nl==2)
-				$b = $b2;
-		}
-		else
-			$i++;
-	}
-	// Last chunk
-	if($this->ws>0)
-	{
-		$this->ws = 0;
-		$this->_out('0 Tw');
-	}
-	if($border && strpos($border,'B')!==false)
-		$b .= 'B';
-	$this->Cell($w,$h,substr($s,$j,$i-$j),$b,2,$align,$fill);
-	$this->x = $this->lMargin;
-}
+    $this->Cell($w,$h,substr($s,$j,$i),$b,2,$align,$fill);
+		return substr($s,$j,$i);
+    $this->x=$this->lMargin;
+    }
+
+
+// function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=false)
+// {
+// 	// Output text with automatic or explicit line breaks
+// 	if(!isset($this->CurrentFont))
+// 		$this->Error('No font has been set');
+// 	$cw = &$this->CurrentFont['cw'];
+// 	if($w==0)
+// 		$w = $this->w-$this->rMargin-$this->x;
+// 	$wmax = ($w-2*$this->cMargin)*1000/$this->FontSize;
+// 	$s = str_replace("\r",'',$txt);
+// 	$nb = strlen($s);
+// 	if($nb>0 && $s[$nb-1]=="\n")
+// 		$nb--;
+// 	$b = 0;
+// 	if($border)
+// 	{
+// 		if($border==1)
+// 		{
+// 			$border = 'LTRB';
+// 			$b = 'LRT';
+// 			$b2 = 'LR';
+// 		}
+// 		else
+// 		{
+// 			$b2 = '';
+// 			if(strpos($border,'L')!==false)
+// 				$b2 .= 'L';
+// 			if(strpos($border,'R')!==false)
+// 				$b2 .= 'R';
+// 			$b = (strpos($border,'T')!==false) ? $b2.'T' : $b2;
+// 		}
+// 	}
+// 	$sep = -1;
+// 	$i = 0;
+// 	$j = 0;
+// 	$l = 0;
+// 	$ns = 0;
+// 	$nl = 1;
+// 	while($i<$nb)
+// 	{
+// 		// Get next character
+// 		$c = $s[$i];
+// 		if($c=="\n")
+// 		{
+// 			// Explicit line break
+// 			if($this->ws>0)
+// 			{
+// 				$this->ws = 0;
+// 				$this->_out('0 Tw');
+// 			}
+// 			$this->Cell($w,$h,substr($s,$j,$i-$j),$b,2,$align,$fill);
+// 			$i++;
+// 			$sep = -1;
+// 			$j = $i;
+// 			$l = 0;
+// 			$ns = 0;
+// 			$nl++;
+// 			if($border && $nl==2)
+// 				$b = $b2;
+// 			continue;
+// 		}
+// 		if($c==' ')
+// 		{
+// 			$sep = $i;
+// 			$ls = $l;
+// 			$ns++;
+// 		}
+// 		$l += $cw[$c];
+// 		if($l>$wmax)
+// 		{
+// 			// Automatic line break
+// 			if($sep==-1)
+// 			{
+// 				if($i==$j)
+// 					$i++;
+// 				if($this->ws>0)
+// 				{
+// 					$this->ws = 0;
+// 					$this->_out('0 Tw');
+// 				}
+// 				$this->Cell($w,$h,substr($s,$j,$i-$j),$b,2,$align,$fill);
+// 			}
+// 			else
+// 			{
+// 				if($align=='J')
+// 				{
+// 					$this->ws = ($ns>1) ? ($wmax-$ls)/1000*$this->FontSize/($ns-1) : 0;
+// 					$this->_out(sprintf('%.3F Tw',$this->ws*$this->k));
+// 				}
+// 				$this->Cell($w,$h,substr($s,$j,$sep-$j),$b,2,$align,$fill);
+// 				$i = $sep+1;
+// 			}
+// 			$sep = -1;
+// 			$j = $i;
+// 			$l = 0;
+// 			$ns = 0;
+// 			$nl++;
+// 			if($border && $nl==2)
+// 				$b = $b2;
+// 		}
+// 		else
+// 			$i++;
+// 	}
+// 	// Last chunk
+// 	if($this->ws>0)
+// 	{
+// 		$this->ws = 0;
+// 		$this->_out('0 Tw');
+// 	}
+// 	if($border && strpos($border,'B')!==false)
+// 		$b .= 'B';
+// 	$this->Cell($w,$h,substr($s,$j,$i-$j),$b,2,$align,$fill);
+// 	$this->x = $this->lMargin;
+// }
 
 function Write($h, $txt, $link='')
 {

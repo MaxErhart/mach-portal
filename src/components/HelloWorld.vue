@@ -13,5 +13,6 @@ export default {
 
 
 <style scoped lang="scss">
+@import 'D:\\inetpub\\MPortal\\src\\_variables';
 
 </style>

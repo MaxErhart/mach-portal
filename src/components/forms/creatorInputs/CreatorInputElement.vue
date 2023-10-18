@@ -1,7 +1,7 @@
 <template>
   <div class="creator-input-element" :class="{edit: edit}">
     <div class="clickable-overlay" :class="{edit: edit}"></div>
-    <InputElement class="element-preview" :data="{label: label, type: type, required: required, placeholder: placeholder, tooltip: tooltip}"/>
+    <InputElement class="element-preview" :label="label" :type="type?.name" :required="required" :placeholder="placeholder" :tooltip="tooltip"/>
     <div class="form-item-buttons no-drag">
       <div class="form-item-option edit-form-item no-drag" @click="toggleEdit()">
         <img class="no-drag" :src="require(`@/assets/edit.svg`)">
@@ -12,27 +12,28 @@
     </div>    
     <div class="edit-element" :class="{active: edit}">
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Label', type: 'text', required: true}" :name="`${name}_label_data`" @valueChange="label=$event" :presetValue="String(label)"/>
+        <InputElement label='Edit Label' type='text' :required="true" @valueChange="label=$event" :presetValue="String(label)"/>
       </section> 
       <section class="type-section">
-        <SelectElement :data="selectData" :name="`${name}_type_data`" :presetValue="type" @selectedEntry="type=$event.name"/>
+        <SelectElement label="Input Type" :required="true" :data="typeSelect" :presetValue="type.id" @selectedEntry="type=$event"/>
       </section>
       <section class="tooltip-section">
-        <InputElement :data="{label: 'Edit Tooltip', type: 'text', required: false}" :name="`${name}_tooltip_data`" @valueChange="tooltip=$event" :presetValue="String(tooltip)"/>
+        <InputElement label='Edit Tooltip' type='text' :required="false"  @valueChange="tooltip=$event" :presetValue="String(tooltip)"/>
       </section> 
       <section class="placeholder-section">
-        <InputElement :data="{label: 'Edit Placeholder', type: 'text', required: false}" :name="`${name}_placeholder_data`" :presetValue="placeholder" @valueChange="placeholder=$event"/>
+        <InputElement label='Edit Placeholder' type='text' :required="false"  :presetValue="placeholder" @valueChange="placeholder=$event"/>
       </section> 
       <section class="required-section">
-        <Checkbox :data="{label: 'Input Required', required: false}" :name="`${name}_required_data`" label="Input Required" @inputChange="required=$event" :presetValue="required"/>
+        <Checkbox label='Input Required' :required="false" @inputChange="required=$event" :presetValue="required"/>
       </section>
       <section class="show-section">
-        <Checkbox :data="{label: 'Show Column for Submissions', required: false}" :name="`${name}_show_data`" @inputChange="show=$event" :presetValue="show"/>
-      </section>      
+        <Checkbox label='Show Column for Submissions' :required="false" @inputChange="show=$event" :presetValue="show"/>
+      </section>
+      <section class="placeholder-section">
+        <InputElement label='Column label short' type='text' :required="false"  :presetValue="label_short" @valueChange="label_short=$event"/>
+      </section> 
       <section class="hidden-section">
-        <input type="hidden" :name="`${name}_component`" value="InputElement">
-        <input type="hidden" :name="`${name}_position`" :value="position">
-        <input type="hidden" :name="`${name}_id`" :value="id ? id : null">
+        <input type="hidden" :name="name" :value="JSON.stringify(elementData)">
       </section>      
     </div>
   </div>
@@ -59,50 +60,63 @@ export default {
   data() {
     return {
       label: 'Element Label',
-      type: 'text',
+      type: {id: 0, name: 'text'},
       tooltip: '',
       placeholder: '',
       required: false,
       typeSelect: [
         {id: 0, name: 'text'},
         {id: 1, name: 'number'},
-        {id: 2, name: 'email'},
-        {id: 3, name: 'date'},
+        {id: 2, name: 'integer'},
+        {id: 3, name: 'float'},
+        {id: 4, name: 'email'},
+        {id: 5, name: 'date'},
       ],
       edit: false,
       show: true,
+      label_short: '',
     }
   },
   computed: {
-    selectData() {
-      var data = {label: 'Input Type', required: true}
-      this.typeSelect.forEach((v, i)=>{
-        data[String(i)]=v.name
-      })
-      return data
+    elementData() {
+      return {
+        component: 'InputElement',
+        position: this.position,
+        id: this.id,
+        show: this.show,
+        input: true,
+        data: {
+          show:this.show,
+          type: this.type.name,
+          label: this.label,
+          tooltip: this.tooltip,
+          required: this.required,
+          placeholder: this.placeholder,
+          label_short:this.label_short,
+        }
+      }
     },
   },
   mounted() {
     if(this.presetData) {
-      this.label=this.presetData.label
-      this.type=this.typeSelect.filter(e=>(e.id==this.presetData.type || e.name===this.presetData.type))[0].name
-      this.tooltip=this.presetData.tooltip
-      this.placeholder=this.presetData.placeholder
-      this.required=Boolean(Number(this.presetData.required))
-      this.show=Boolean(Number(this.presetData.show))
+      this.matchPresets(this.presetData)
     }
   },
   watch: {
     presetData(to) {
-      this.label=to.label
-      this.type=to.type
-      this.tooltip=to.tooltip
-      this.placeholder=to.placeholder
-      this.required=Boolean(Number(to.required))
-      this.show=Boolean(Number(this.presetData.show))
+      this.matchPresets(to)
     }
-  },  
+  }, 
   methods: {
+    matchPresets(value) {
+      this.label=value.data.label
+      this.type=this.typeSelect.find(typeSel=>typeSel.name==value.data.type)
+      this.tooltip=value.data.tooltip
+      this.placeholder=value.data.placeholder
+      this.required=value.data.required
+      this.show=value.show
+      this.label_short=value.data.label_short
+    },
     deleteItem() {
       this.$emit("deleteItem", this.formCratorIdentifier)
     },    

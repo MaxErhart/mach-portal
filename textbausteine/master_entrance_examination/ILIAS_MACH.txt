@@ -18,7 +18,6 @@ Bitte melden Sie sich nach der Registrierung im ILIAS-Kurs "Masterzugangsprüfung
 
 Den ILIAS-Kurs finden Sie über diesen Link: 
 https://ilias.studium.kit.edu/goto.php?target=crs_1416247_rcode8k7mREmLXd&client_id=produktiv
-
 Eine genaue Beschreibung des Prüfungsablaufs ist in diesem Ordner als PDF-Download verfügbar.
 Für eine Teilnahme an der Klausur ist folgende Ausstattung erforderlich: 
 o	eigner PC oder Laptop

@@ -6,17 +6,16 @@
     <h4>Deadline: {{bewerber.entrance_exam.deadline}}</h4>
     <div></div>
     <div class="body">
-      <template v-if="bewerber.status==='Rejected for the time being'">
+      <template v-if="bewerber.State==='Rejected for the time being'">
         <div v-if="!registered">You are not registered for the entrance examination.</div>
-        <div v-if="!registered">By registrating for the entrance examination you apply for admission to the entrance examination.</div>
+        <div v-if="!registered">By registering you apply for the admission to the entrance examination.</div>
         <div v-if="registered">You are registered for the entrance examination.</div>      
-        <div v-if="registered">The eligibility of your registration will be checked.</div>
-        <Button v-if="!registered" @click="register(true)" :loading="buttonElementData_register.loading" :disabled="buttonElementData_register.disabled" :text="buttonElementData_register.text" />
-        <Button v-if="registered" @click="register(false)" :loading="buttonElementData_unregister.loading" :disabled="buttonElementData_unregister.disabled" :text="buttonElementData_unregister.text" />        
+        <div v-if="registered">The eligibility of your application will be checked.</div>
+        <div v-if="registered">Updates regarding the registration are send to your mail address as well as displayed in the list of notices below.</div>
+        <Button ref="button" v-if="!registered" @click="register(true)" :loading="buttonElementData_register.loading" :disabled="buttonElementData_register.disabled" :text="buttonElementData_register.text" />
+        <Button ref="button" v-if="registered" @click="register(false)" :loading="buttonElementData_unregister.loading" :disabled="buttonElementData_unregister.disabled" :text="buttonElementData_unregister.text" />        
       </template>
       <template v-else>Note: Only applicants with the application status "Rejected for the time being" can register for the entrance examination.</template>
-
-
     </div>
   </div>
 </template>
@@ -71,13 +70,11 @@ export default {
   },
   methods: {
     register(register) {
-
       const url = `${this.apiUrl}/bewerberportal/register`
       var formData = new FormData();
       var bewerber = JSON.parse(localStorage.bewerberportal)
-      formData.append('first_name', bewerber.Vorname)
-      formData.append('last_name', bewerber.Name)
-      formData.append('bewerbungs_nummer', bewerber['Bewerbungs-nummer'])
+      formData.append('email', bewerber.Email)
+      formData.append('number', bewerber.Number)
       formData.append('register', register ? "1" : "0")
 
       axios({
@@ -91,6 +88,8 @@ export default {
         this.$emit('register', response.data.entrance_exam_registered)
       }).catch(error=>{
         console.log(error.response)
+        this.$refs.button.error= true
+        this.$refs.button.errorMessage= error.response.data
       })
     }
   },

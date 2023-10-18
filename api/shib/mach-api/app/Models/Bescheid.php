@@ -12,7 +12,13 @@ class Bescheid extends Model
     protected $fillable = [
         'name',
         'file_pdf',
+        'file',
     ];
+
+    protected $casts = [
+        'updated_at'=>'date:d.m.Y',
+        'file' => 'array',
+    ]; 
 
     public function bewerber() {
         return $this->belongsTo(Bewerber::class, 'bewerber_id');

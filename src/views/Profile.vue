@@ -29,7 +29,7 @@
           </div>
         </div>
       </div>
-      <Checkbox name="consent" :data="consentCheckbox" ref="consent"/>
+      <Checkbox name="consent" label="I consent to the storage of my data." :required="true" ref="consent"/>
       <Button ref="submitButton" text="Submit" :disabled="submitDisabled" :loading="submitLoading"/>
 
     </form>
@@ -58,7 +58,6 @@ export default {
     return {
       submitDisabled: false,
       submitLoading: false,
-      consentCheckbox: {label: 'I consent to the storage of my data.', required: true},
       attributeSettingsShib: {
         'firstname': {name: 'firstname', label: 'First Name', readonly: true, autocomplete: null},
         'lastname': {name: 'lastname', label: 'Last Name', readonly: true, autocomplete: null},

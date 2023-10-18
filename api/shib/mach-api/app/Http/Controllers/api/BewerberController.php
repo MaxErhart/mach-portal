@@ -20,15 +20,32 @@ class BewerberController extends Controller
     public function data_protection(Request $request)
     {
         $request->validate([
-            "first_name"=> "required",
-            "last_name"=> "required",
-            "bewerbungs_nummer"=> "required|integer",
+            "Email"=> "required|email",
+            "Number"=> "required",
             "data_protection"=> "required|boolean",
         ]);
         $bewerber = Bewerber::where([
-            "Bewerbungs-nummer"=>$request->get("bewerbungs_nummer"),
+            "Number"=>$request->get("Number"),
         ])->get();
-
+        if(count($bewerber)>1) {
+            $error = [
+                "errors"=> "Too many entries",
+                "message"=> "Too many entries",
+            ];            
+            return response($error, 400);
+        } else if(count($bewerber)<1){
+            $error = [
+                "errors"=> "No entry",
+                "message"=> "Application not found. The list of applications is updated regularly. Please try again later or contact the support",
+            ];            
+            return response($error, 400);
+        }
+        if($request->get("Email")!==$bewerber[0]->getAttribute('Email')) {
+            $error = [
+                "message"=> "Input wrong.",
+            ];            
+            return response($error, 400);
+        }
         if(count($bewerber)>1) {
             return response('Too many entries.', 400);
         } else if(count($bewerber)<1){
@@ -45,14 +62,13 @@ class BewerberController extends Controller
 
     public function register(Request $request) {
         $request->validate([
-            "first_name"=> "required",
-            "last_name"=> "required",
-            "bewerbungs_nummer"=> "required|integer",
+            "email"=> "required",
+            "number"=> "required",
             "register"=>"required|boolean",
         ]);
 
         $bewerber = Bewerber::where([
-            "Bewerbungs-nummer"=>$request->get("bewerbungs_nummer"),
+            "Number"=>$request->get("number"),
         ])->get();
 
         if(count($bewerber)>1) {
@@ -60,12 +76,18 @@ class BewerberController extends Controller
         } else if(count($bewerber)<1){
             return response('No entry.', 400);
         }
-
         $bewerber = $bewerber[0];
+        if($request->get("email")!==$bewerber->Email) {
+            $error = [
+                "errors"=> "Input wrong",
+                "message"=> "Email or Applicant number is wrong",
+            ];            
+            return response($error, 400);
+        }
 
         $deadline = $bewerber->entrance_exam->deadline->format('U');
         if(time()>=$deadline+86400) {
-            return response('Deadline.', 400);
+            return response('Passed deadline', 400);
         }
 
         $bewerber->entrance_exam_registration_changed = date('Y-m-d');
@@ -79,25 +101,31 @@ class BewerberController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            // "first_name"=> "required",
-            "email"=> "required|email",
-            "bewerbungs_nummer"=> "required|integer",
+            "Email"=> "required|email",
+            "Number"=> "required",
         ]);
+        $number = $request->get("Number");
+        if(strlen($number)===7) {
+            $number = substr($number,0,1).",".substr($number,1,3).",".substr($number,4,3);
+        }
+        if(strlen($number)===9) {
+            $number = substr($number,0,1).",".substr($number,2,3).",".substr($number,6,3);
+        }
         $bewerber = Bewerber::where([
-            "Bewerbungs-nummer"=>$request->get("bewerbungs_nummer"),
+            "Number"=>$number,
         ])->get();
 
 
         if(count($bewerber)>1) {
             $error = [
-                "errors"=> "Too many entries.",
-                "message"=> "Too many entries.",
+                "errors"=> "Too many entries",
+                "message"=> "Too many entries",
             ];            
             return response($error, 400);
         } else if(count($bewerber)<1){
             $error = [
-                "errors"=> "No entry.",
-                "message"=> "Application not found. The list of applications is updated every few days. Please try again later or contact the support.",
+                "errors"=> ["Login"=>["No entry"]],
+                "message"=> "Application not found. The list of applications is updated regularly. Please try again later or contact the support",
             ];            
             return response($error, 400);
         }
@@ -106,10 +134,10 @@ class BewerberController extends Controller
 
         $bewerber = $bewerber[0];
 
-        if($request->get("email")!==$bewerber->getAttribute('KIT-E-Mail')) {
+        if($request->get("Email")!==$bewerber->Email) {
             $error = [
-                "errors"=> "Wrong inputs.",
-                "message"=> "Email wrong.",
+                "errors"=> "Input wrong",
+                "message"=> "Email or Applicant number is wrong",
             ];            
             return response($error, 400);
         }

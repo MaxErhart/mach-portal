@@ -13,8 +13,35 @@ class Group extends Model
         "name"
     ];
 
+    public function getUserPermissionOnGroup($user) {
+        if($user->isAdmin()) {
+            return 3;
+        }
+        if($user->hasGroup($this->id)) {
+            return 3;
+        }
+        return 0;
+    }
+
+    public function get_name() {
+        return $this->name;
+    }
+
+    public function emails()
+    {
+        return $this->morphToMany(Email::class, 'recipient', 'email_recipient');
+    }
+
     public function users() {
         return $this->belongsToMany(User::class, 'group_user', 'group_id', 'user_id');
+    }
+
+    public function archive_permissions() {
+        return $this->morphMany(ArchivePermission::class, 'agent');
+    }
+
+    public function submissions() {
+        return $this->morphMany(Submission::class, 'owner');
     }
 
     public function app_permissions() {
@@ -30,7 +57,7 @@ class Group extends Model
     }
 
     public function view_forms() {
-        return $this->morphToMany(Form::class, 'agent', 'agent_form_permissions')->withPivot('permission');
+        return $this->morphToMany(Form::class, 'agent', 'agent_form_permissions')->withPivot('submit_permission', 'form_permission');
     }
  
     public function submission_permissions_users() {

@@ -1,7 +1,7 @@
 <template>
   <div class="creator-input-element" :class="{edit: edit}">
     <div class="clickable-overlay" :class="{edit: edit}"></div>
-    <component :is="type" class="item-content" :style="style">
+    <component :is="type.name" class="item-content" :style="style">
       {{content}}
     </component>
     <div class="form-item-buttons no-drag">
@@ -15,22 +15,20 @@
 
     <div class="edit-element" :class="{active: edit}">
       <section class="label-section">
-        <InputElement :data="{label: 'Edit Header', type: 'text', required: true}" :name="`${name}_content_data`" label="Edit Header" type="text" :required="true" @valueChange="content=$event" :presetValue="content"/>
+        <InputElement label="Edit Header" type="text" :required="true" @valueChange="content=$event" :presetValue="content"/>
       </section> 
       <section class="type-section">
-        <SelectElement :data="selectData" :nameAsValue="true" :name="`${name}_type_data`" @selectedEntry="type=$event.name" :presetValue="type"/>
+        <SelectElement label="Header type" :required="true" :data="typeSelect" @selectedEntry="type=$event" :presetValue="type.id"/>
       </section>
       <section class="label-section">
-        <Checkbox :data="{label: 'Underline text'}" :name="`${name}_underline_data`" @inputChange="underline=$event" :presetValue="underline=='true'?true:false"/>
+        <Checkbox label="Underline Text" @inputChange="underline=$event" :presetValue="underline=='true'?true:false"/>
       </section>
       <section class="color-section">
         <label for="Text Color"></label>
-        <input type="color" :name="`${name}_color_data`" v-model="color">
+        <input type="color" v-model="color">
       </section>      
       <section class="hidden-section">
-        <input type="hidden" :name="`${name}_component`" value="HeaderElement">
-        <input type="hidden" :name="`${name}_position`" :value="position">
-        <input type="hidden" :name="`${name}_id`" :value="id ? id : null">
+        <input type="hidden" :name="name" :value="JSON.stringify(elementData)">
       </section>      
     </div>
   </div>
@@ -57,7 +55,7 @@ export default {
   data() {
     return {
       content: 'Header',
-      type: 'h1',
+      type: {id: 0, name: 'h1'},
       typeSelect: [
         {id: 0, name: 'h1'},
         {id: 1, name: 'h2'},
@@ -73,20 +71,30 @@ export default {
   },
   mounted() {
     if(this.presetData) {
-      this.type=this.presetData.type
-      this.content=this.presetData.content
-      this.color=this.presetData.color
-      this.underline=this.presetData.underline
+      this.matchPresets(this.presetData)
     }
   },
   watch: {
     presetData(to) {
-      this.type=to.type
-      this.content=to.content=='true'?true:false
-      this.color=to.color
+      this.matchPresets(to)
     }
   },  
   computed: {
+    elementData() {
+      return {
+        component: 'HeaderElement',
+        position: this.position,
+        id: this.id,
+        show: true,
+        input: false,
+        data: {
+          content: this.content,
+          type: this.type.name,
+          underline: this.underline,
+          color: this.color
+        }
+      }
+    },
     selectData() {
       var data = {label: 'Input Type', required: true}
       this.typeSelect.forEach((v, i)=>{
@@ -103,6 +111,12 @@ export default {
     },
   },  
   methods: {
+    matchPresets(value) {
+      this.type=this.typeSelect.find(el=>el.name==value.data.type)
+      this.content=value.data.content
+      this.color=value.data.color
+      this.underline=value.data.underline
+    },
     test(e){
       console.log(e)
     },
@@ -126,22 +140,22 @@ export default {
 <style scoped lang="scss">
 @import 'D:\\inetpub\\MPortal\\src\\_variables';
 h1 {
-  padding: 0;
-  margin: 8px 0;
+  margin:0;
+  padding: 8px 0;
   color: $text_dark;
   text-decoration: none;
   border: none;
 }
 h2 {
-  padding: 0;
-  margin: 8px 0;
+  margin: 0;
+  padding: 8px 0;
   color: $text_dark;
   text-decoration: none;
   border: none;
 }
 h3 {
-  padding: 0;
-  margin: 4px 0;
+  margin: 0;
+  padding: 4px 0;
   color: $text_dark;
   text-decoration: none;
   border: none;
