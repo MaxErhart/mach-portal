@@ -2,6 +2,11 @@
 node_modules
 /dist
 /dfiles
+/tempPHP
+/App_Data
+/archive
+/css
+/download
 
 # local env files
 .env.local
