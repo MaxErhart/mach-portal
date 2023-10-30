@@ -335,7 +335,7 @@ props: {
     },
 
     handleSelect(selected) {
-      this.selected = selected.rows.map(row=>row.id)
+      this.selected = selected.rows?.map(row=>row.id)
       console.log(this.selected)
     },
 

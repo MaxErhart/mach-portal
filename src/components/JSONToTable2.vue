@@ -104,7 +104,7 @@
           <Checkbox label="" @change="selectSingle($event,row.index)" :presetValue="singleSelected(row.index)"/>
         </div>
         <div class="table-entry" :class="`error-${errors?.[row.index]?.[index]}`" v-for="(column,index) in columns.filter(column=>!('show' in column) || column.show)" :key="column.id">
-          <div class="content" v-html="row[column.id]" ></div>
+          <div class="content" v-html="getRowData(row,column.id)" ></div>
         </div>
       </div>
 
@@ -174,7 +174,7 @@ export default {
     
     // Array of the tables header
     // Columns are displayed in the order they are listed
-    // Each entry is of the form {id: column_id, name: column_name}
+    // Each entry is of the form {id: column_id, name: column_name, show: Boolean}
     columns: Array,
 
     // Show / Hide column for row selection
@@ -195,6 +195,14 @@ export default {
 
 
     errors: Array,
+
+    // Determines if element inside the data array are nested
+    // If true the column.id will be split at "." and each fragment treated as a nested layer from where data is retrieved
+    nested: {
+      default: false,
+      type: Boolean,
+    },
+
   },
 
   
@@ -277,6 +285,18 @@ export default {
 
 
   methods: {
+    getRowData(row,column_id) {
+      if(!this.nested) {
+        return row[column_id]
+      }
+      const fragments = column_id.split(".")
+      var tmp_value = row[fragments[0]]
+      for(let i=1;i<fragments.length;i++) {
+        tmp_value = tmp_value[fragments[i]]
+      }
+      return tmp_value
+      
+    },
     getOptionStep(option) {
       console.log(option)
       return true
@@ -723,6 +743,7 @@ export default {
       &.error-2 {
         background-color: rgba(255, 23, 68,0.5);
       }
+
       .content {
         text-align: left;
         overflow: hidden;

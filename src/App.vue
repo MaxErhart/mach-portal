@@ -95,6 +95,19 @@ export default {
     this.$store.commit('setScreenWidth', this.innerWidth)
   },
   computed: {
+    // is_public() {
+    //   // const fragments = window.location.href.split("/")
+    //   // if(fragments.indexOf('#')+1==fragments.indexOf('public') || fragments.indexOf('#')+1==fragments.indexOf('bewerberportal')) {
+    //   //   return true
+    //   // }
+    //   return false
+    // },
+    // redirect_on_error_403() {
+    //   if(this.is_public || window.location.href.endsWith('https://www-3.mach.kit.edu/dist/') ||  window.location.href.endsWith('https://www-3.mach.kit.edu/dist')) {
+    //     return false
+    //   }
+    //   return true
+    // },
     is_public() {
       const fragments = window.location.href.split("/")
       if(fragments.indexOf('#')+1==fragments.indexOf('public') || fragments.indexOf('#')+1==fragments.indexOf('bewerberportal')) {
@@ -203,7 +216,7 @@ export default {
       banner['backgroundColor'] = 'rgb(188 240 218)'
       banner['color'] = 'rgb(3 84 63)'
       banner['duration'] = -1
-      banner['text'] = 'Please fill out all user information in your <a href="https://www-3.mach.kit.edu/dist/#/profile">profile settings</>.'
+      banner['text'] = 'Please fill out all user information in your <a href="https://www-3.mach.kit.edu/profile">profile settings</>.'
       this.banners.push(banner)
       this.updateScrollVariables()
     },
@@ -256,10 +269,11 @@ export default {
 
     },
     async getProfile() {
-      var url = this.$store.getters.getApiAuthUrl+'/login'
+      var url = this.$store.getters.getApiAuthUrl+'login'
       if(window.location.host.startsWith('localhost')) {
-        url = this.$store.getters.getApiUrl+'/login'
+        url = this.$store.getters.getApiUrl+'login'
       }
+      console.log(url)
       axios({
         method: 'get',
         url: url,
@@ -270,6 +284,7 @@ export default {
         this.$store.commit('profile', this.user)
         this.authCheck=true
       }).catch(error=>{
+        console.log(error?.response)
         this.authCheck=true
         if(error.response?.status!==403 && error.response?.status!==undefined) {
           this.emitter.emit('showErrorMessage', {error: error.response, action: 'Get user information', redirect: null})
@@ -284,6 +299,7 @@ export default {
         return
       }
       var url = `https://www-3.mach.kit.edu/Shibboleth.sso/Login?target=${this.encodeUrl(window.location.href)}`
+      // console.log(url)
       window.location.href = url;
     },
     encodeUrl(url){

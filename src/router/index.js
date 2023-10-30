@@ -1,4 +1,3 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import CreateForms from '../views/CreateForms.vue'
 import Forms from '../views/Forms.vue'
@@ -16,9 +15,20 @@ import SendMail from '../views/SendMail.vue'
 import Graduates from '../views/Graduates.vue'
 import Form from '../views/Form.vue'
 import Archive from '../views/Archive.vue'
+import Dashboard from '../views/Dashboard.vue'
 // import FRat from '../views/FRat.vue'
 
 const routes = [
+
+  // Dashboard
+
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: Dashboard,
+  },
+
+  // Archive routes
 
   {
     path: '/frat/:sub_route*',
@@ -187,8 +197,13 @@ const routes = [
 
 
 ]
+
+// import { createRouter,  createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
+
 const router = createRouter({
-  // history: createWebHistory(),
+  // history: createWebHistory(process.env.BASE_URL),
+  // mode: 'history',
   history: createWebHashHistory(process.env.BASE_URL),
 
   routes

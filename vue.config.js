@@ -1,4 +1,6 @@
 module.exports = {
+  // publicPath: './dist/',
+  // baseUrl: "./",
   publicPath: '/dist/',
   runtimeCompiler: true,
   chainWebpack: config => {

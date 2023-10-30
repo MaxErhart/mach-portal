@@ -83,6 +83,12 @@ export default {
         'height': `${ripple.radius}px`,
       }
     },
+    encodeUrl(url){
+      url = url.replaceAll(":", "%3A")
+      url = url.replaceAll("/", "%2F")
+      url = url.replaceAll("#", "%23")
+      return url
+    },
     createRipple(event) {
       const button = event.target.getBoundingClientRect()
       const radius = button.height>button.width ? button.height : button.width
@@ -93,7 +99,9 @@ export default {
           radius: radius,
         }
       )
-      window.location.href = "https://www-3.mach.kit.edu/Shibboleth.sso/Login?target=https://www-3.mach.kit.edu/dist/%23"+this.$route.path;
+      console.log(`https://www-3.mach.kit.edu/Shibboleth.sso/Login?target=${this.encodeUrl(window.location.href)}`)
+      window.location.href = `https://www-3.mach.kit.edu/Shibboleth.sso/Login?target=${this.encodeUrl(window.location.href)}`
+      // window.location.href = "https://www-3.mach.kit.edu/Shibboleth.sso/Login?target=https://www-3.mach.kit.edu/dist/%23"+this.$route.path;
       // this.$router.push({name: 'Login', params: {returnRoute: this.$route.name}})
     }
   }
